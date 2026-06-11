@@ -1,0 +1,17 @@
+{
+  "_instructions": "TEMPLATE — common CLI commands for this project. The build-check skill auto-detects build/test commands on first run and stores them in .claude/idev/build-check/cache.json; copy the detected commands here (or fill in manually) so they are documented in one place.",
+  "commands": {
+    "build": {
+      "description": "Build the project",
+      "command": "{{e.g. dotnet build MySolution.sln | npm run build | make}}"
+    },
+    "run": {
+      "description": "Run the app locally",
+      "command": "{{e.g. dotnet run --project path/to/App.csproj | npm start}}"
+    },
+    "test": {
+      "description": "Run the test suite",
+      "command": "{{e.g. dotnet test | npm test | pytest}}"
+    }
+  }
+}

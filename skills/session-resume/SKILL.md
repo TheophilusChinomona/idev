@@ -1,0 +1,123 @@
+---
+name: session-resume
+description: Cross-session context persistence. Load .claude/idev/session-resume/last-session.json at session start to restore working context; save state before compaction or session end.
+---
+
+# Session Resume Skill
+
+## Purpose
+Persist working context across sessions so Claude can resume exactly where it left off without re-discovering files, re-reading code, or re-learning what was being worked on.
+
+## Activation
+- **Save**: At the end of every session or before context compaction
+- **Load**: At the start of every new session (before any task work)
+
+---
+
+## How It Works
+
+A lightweight session snapshot is saved to:
+`.claude/idev/session-resume/last-session.json`
+
+This file is loaded at session start, giving Claude instant awareness of:
+- What feature/area was being worked on
+- Which files were recently read/modified
+- What the last task was
+- Any pending issues or blockers
+
+---
+
+## Phase 1: Save Session State
+
+At end of session (or when context is getting large), save:
+
+```json
+{
+  "savedAt": "YYYY-MM-DD HH:mm",
+  "lastTask": {
+    "description": "Brief description of what was being done",
+    "status": "completed|in-progress|blocked",
+    "blockedBy": "Description of blocker (if blocked)"
+  },
+  "activeFeature": "FeatureName (e.g., Orders)",
+  "activeLayer": "frontend|backend|full-stack",
+  "recentFiles": {
+    "modified": [
+      "relative/path/to/file1.ts",
+      "relative/path/to/file2.cs"
+    ],
+    "read": [
+      "relative/path/to/file3.ts"
+    ]
+  },
+  "openIssues": [
+    {
+      "description": "Reject button not hitting API - needs browser console check",
+      "file": "relative/path/to/file.tsx",
+      "severity": "medium"
+    }
+  ],
+  "workingBranch": "feature/branch-name",
+  "notes": "Any important context that would be lost on session restart"
+}
+```
+
+---
+
+## Phase 2: Load Session State
+
+At session start:
+
+```
+1. Read last-session.json (~30 lines, ~50 tokens)
+2. If lastTask.status == "in-progress":
+   → Inform user: "Last session was working on: [description]"
+   → Offer to continue or start fresh
+3. If openIssues exist:
+   → Mention pending issues briefly
+4. Use activeFeature + activeLayer to pre-load the right context
+5. Use recentFiles.modified to know which files were changed
+```
+
+---
+
+## Phase 3: When to Save
+
+Save the session state when ANY of these occur:
+1. User explicitly says "save session" or "save context"
+2. Before context compaction (auto-summarization)
+3. User switches to a different feature/task
+4. A task is completed (update lastTask.status)
+5. A blocker is encountered (update openIssues)
+
+---
+
+## Save Rules
+
+- Keep recentFiles lists to max 10 entries each (most recent first)
+- Keep openIssues to max 5 entries
+- Overwrite previous session file (only latest session matters)
+- Do NOT save file contents — only paths
+- Do NOT save sensitive data (tokens, passwords, keys)
+- Total file size should stay under 50 lines
+
+---
+
+## Integration with Other Skills
+
+```
+Session start:
+  1. Load last-session.json (this skill)
+  2. Load .claude/idev/smart-context/index.json (smart context skill)
+  3. If activeFeature is set → grep file-index for that feature's files
+  4. Ready to work in ~3 reads
+```
+
+---
+
+## Anti-Patterns
+
+1. Do NOT save entire file contents in the session state
+2. Do NOT save more than 10 recent files
+3. Do NOT load the session state AND re-explore the codebase
+4. Do NOT ignore the session state when it exists

@@ -1,0 +1,106 @@
+Project Map Skill for Claude
+============================
+
+This Claude skill maps your project structure, tracks changes,
+and generates a persistent project map (`project.map.md`) for Claude to reference.
+
+Supported project types:
+- Split: Separate FE + BE projects (e.g. React + .NET API)
+- Unified: Single project where UI + services coexist (e.g. Blazor Server, MVC, Razor Pages)
+
+Features:
+- Auto-categorizes files by layer (Pages/UI, Services, Domain, Infrastructure)
+- Automatic updates on project changes (with cooldown)
+- Persistent context to avoid rescanning
+- Interactive setup asks for project type on first run
+
+Folder Structure
+----------------
+project-root/
++-- .claude
+|   +-- skills
+|       +-- project_map
+|           +-- project.map.md         <- auto-generated map file
+|           +-- map.rules.md           <- Claude rules for referencing the map
+|           +-- ai_map_updater.py      <- generates/updates the map
+|           +-- map_watcher.py         <- watches project changes
+|           +-- watcher_config.json    <- saved configuration (auto-created)
+
+Prerequisites
+-------------
+- Python 3.10+ installed
+- pip (Python package manager)
+
+Installation Steps
+------------------
+
+1. Install Python
+- Download Python: https://www.python.org/downloads/windows/
+- Check "Add Python to PATH" during installation
+- Verify installation:
+  > python --version
+
+2. Place Project Map Skill
+- Copy the folder `${CLAUDE_PLUGIN_ROOT}/skills/project-map` into your project root.
+
+3. Start the Watcher
+- From the project root:
+  > python .claude\skills\project_map\map_watcher.py
+- On first run, it asks what type of project structure you have:
+  1. Split (separate FE + BE)
+  2. Unified (Blazor Server, MVC, monolith)
+- The watcher generates an initial map immediately.
+- Subsequent updates occur every 60 seconds.
+- Configuration is saved to `watcher_config.json` for future runs.
+
+4. Configure Claude Rules
+- Create or update `.claude/rules.md` with:
+  System: Always consult `.claude/idev/project-map/project.map.md` before making any decisions.
+
+How It Works
+------------
+1. Watcher (`map_watcher.py`) asks for project type on first run.
+2. Updater (`ai_map_updater.py`) generates `project.map.md`.
+3. Claude reads `project.map.md` for persistent project knowledge.
+
+For Split projects, map includes:
+   - Frontend files (.ts, .tsx, .json)
+   - Backend files (.cs, .json)
+   - Domain entities summary
+
+For Unified projects (Blazor/MVC), map categorizes into:
+   - Pages / UI Components (.razor, .cshtml)
+   - Services / Interfaces
+   - Domain / Entities
+   - Infrastructure / Data
+   - Other files
+
+4. The watcher never modifies code, only updates the map.
+
+Configuration
+-------------
+The watcher saves its config to `watcher_config.json`. Example configs:
+
+Split project:
+  {
+    "project_type": "split",
+    "frontend_path": "C:\\path\\to\\frontend",
+    "backend_path": "C:\\path\\to\\backend",
+    "unified_path": null
+  }
+
+Unified project (Blazor Server):
+  {
+    "project_type": "unified",
+    "unified_path": "/path/to/project/src",
+    "frontend_path": null,
+    "backend_path": null
+  }
+
+To reconfigure, run the watcher and answer "n" when asked to use existing config.
+
+Tips
+----
+- Keep `project.map.md` inside `${CLAUDE_PLUGIN_ROOT}/skills/project-map` for consistency.
+- Adjust `IGNORE_DIRS` in `ai_map_updater.py` for your project structure.
+- Change `UPDATE_INTERVAL` in `map_watcher.py` to adjust update frequency.

@@ -1,0 +1,11 @@
+{
+  "name": "idev",
+  "version": "0.1.0",
+  "description": "Token-optimized development workflow pack: cached project context, FE/BE pattern scanners, build & wiring verification, session persistence, and self-review — auto-adapts to any stack.",
+  "author": {
+    "name": "Hein",
+    "email": "hein@speccon.co.za"
+  },
+  "license": "MIT",
+  "keywords": ["workflow", "context", "caching", "verification", "patterns", "session"]
+}

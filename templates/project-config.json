@@ -1,0 +1,14 @@
+{
+  "_instructions": "TEMPLATE — fill in per project, or let the skills populate it. The pattern skills (smart_context, backend-patterns, frontend-patterns, architecture-scanner) auto-detect stack and paths on first scan; this file holds the conventions and config that CANNOT be detected by scanning (business rules, agreed conventions, limits).",
+  "project": {
+    "name": "{{PROJECT_NAME}}",
+    "type": "{{e.g. aspnet-react | django | express-vue}}",
+    "framework": "{{e.g. net8.0 | python3.12 | node20}}"
+  },
+  "conventions": {
+    "_note": "Document project-specific conventions Claude must always apply, e.g. soft-delete approach, entity tracking rules, required default values. Delete this key if none."
+  },
+  "paths": {
+    "_note": "Optional: key source roots. Skills auto-detect these on first scan; only fill in if detection needs overriding."
+  }
+}
