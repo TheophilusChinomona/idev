@@ -10,5 +10,10 @@
   },
   "paths": {
     "_note": "Optional: key source roots. Skills auto-detect these on first scan; only fill in if detection needs overriding."
+  },
+  "git": {
+    "_note": "Used by the branch-sync skill / branch-syncer agent. baseBranch: the branch PRs target and that gets merged INTO feature branches before a PR. syncStrategy: merge (default) or rebase, per team policy.",
+    "baseBranch": "{{e.g. developer | develop | main}}",
+    "syncStrategy": "merge"
   }
 }

@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 26 skills, 8 agents, 7 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 27 skills, 9 agents, 8 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -91,11 +91,11 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 ## Components
 
-### Skills (26)
+### Skills (27)
 | Group | Skills |
 |-------|--------|
 | Context | smart-context, project-map, file-index, function-extract, strategic-compact |
-| Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards, commit-style |
+| Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards, commit-style, branch-sync |
 | Verification | build-check, post-creation-verify, api-contract-validation, feature-completeness, self-review, test-map, browser-test |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
 | Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init, skill-benchmark |
@@ -111,13 +111,15 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 | refactor-cleaner | dead-code removal honoring project never-remove rules |
 | onboarding-guide | facts-only codebase orientation and execution-path tracing (read-only) |
 | browser-tester | code-as-action browser verification: writes/runs Playwright scripts, reports with screenshot + console evidence |
+| branch-syncer | merges the base branch into the feature branch before a PR; evidence-based conflict resolution + build/test verification |
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (7)
+### Commands (8)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
+`/idev:sync-branch` — merge the team base branch into the current feature branch before a PR; conflict resolution + verification + report.
 `/idev:evolve`, `/idev:instinct-status`, `/idev:instinct-import`, `/idev:instinct-export` — the auto-learning instinct CLI (state in `~/.claude/homunculus/`).
 
 ### Optional hooks — managed by `/idev:hooks`, off by default

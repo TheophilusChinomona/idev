@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0 — 2026-06-12
+
+### Added
+- Pre-PR branch synchronization: `branch-sync` skill (merge the team base
+  branch into the feature branch before a PR; base-branch resolution from
+  project config with developer/develop/main/master fallback;
+  evidence-based conflict resolution with a three-way playbook in
+  `references/conflict-resolution.md` covering lockfiles, migrations,
+  delete-vs-modify, and semantic conflicts; mandatory post-merge
+  build/test verification; rollback points; never force-push),
+  `branch-syncer` agent (runs the whole flow, escalates ambiguous
+  conflicts instead of guessing, structured sync report), and
+  `/idev:sync-branch` command. `project-config.json` template gains a
+  `git` section (baseBranch, syncStrategy). First skill using the
+  references/ progressive-disclosure layout. 27 skills, 9 agents,
+  8 commands.
+
 ## 0.7.0 — 2026-06-12
 
 ### Added

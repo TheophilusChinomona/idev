@@ -24,13 +24,14 @@ check lessons-learned → load backend/frontend-patterns cache (match existing c
 | security-only audit | security-reviewer |
 | dead-code removal | refactor-cleaner |
 | "where should I start / what owns this" | onboarding-guide |
+| sync feature branch with base before PR | branch-syncer |
 
 ### Session boundaries
 - Start: the SessionStart hook injects last-session context and pending journal tasks — act on them.
 - Task done: update `.claude/idev/task-journal/journal.md`, save the session-resume snapshot, log mistakes-with-fixes to lessons-learned.
 
-### Commits
-Follow `.claude/idev/commit-style.md` (commit-style skill). The commit-msg git hook enforces it — fix the message, never `--no-verify`.
+### Commits & PRs
+Follow `.claude/idev/commit-style.md` (commit-style skill). The commit-msg git hook enforces it — fix the message, never `--no-verify`. Before creating a PR: run the branch-sync workflow (`/idev:sync-branch`) — merge the base branch in, resolve conflicts with evidence, verify with a build.
 
 ### Concise Mode
 1. Act, don't narrate — do the work first, summarize after.
