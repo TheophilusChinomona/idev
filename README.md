@@ -29,9 +29,65 @@ Then, inside each project, scaffold the per-project state:
 
 ## How it works
 
-- **Plugin = logic** (read-only): skills, agents, scripts under the plugin install dir.
-- **Project = state**: everything mutable lives in `<project>/.claude/idev/` — smart-context index, pattern caches, file index, import graph, test map, journal, lessons, session-resume state, project map, API contracts.
-- **SessionStart hook** injects last-session context, pending journal tasks, and the smart-context index pointer at every session start (the old CLAUDE.md "Auto-Startup Sequence").
+Two ideas drive everything:
+
+- **Plugin = logic, project = state.** The plugin install directory is read-only logic: skills, agents, scripts. Everything mutable lives in `<project>/.claude/idev/` — indexes, pattern caches, journal, lessons, session snapshots. Skills regenerate that state by scanning whatever project they land in, which is what makes the same plugin work across different codebases.
+- **Skills load themselves; you mostly just work.** Each skill carries a description telling Claude *when* to use it ("after creating an API endpoint…", "when resuming a session…"). You don't invoke skills by name — you ask for normal dev work and the relevant skill's procedure kicks in. The only always-on piece is the SessionStart hook, which injects last-session context, pending journal tasks, and the smart-context index pointer at the start of every session (and stays silent in projects you haven't initialized).
+
+## How to use
+
+### 1. First session in a project
+
+Run `/idev:idev-init` once. It creates `.claude/idev/` with the journal, lessons file, rules file, and config templates, offers to append the policy snippet to your `CLAUDE.md`, and generates the smart-context index (`scanner.py` detects your stack, features, and conventions). From then on, every session starts with that context injected automatically.
+
+### 2. Day-to-day development
+
+Just describe tasks normally. The skills slot into four phases of the work:
+
+**Finding things** — instead of reading whole files, Claude consults the caches first: the smart-context index for "which files implement feature X", the file index for fast path lookup, the project map (grepped, never loaded whole) for structure, and the Function Index inside the pattern caches for "where is function Y" without reading the file.
+
+**Writing code** — `architecture-scanner` works out which layer a file belongs to; `backend-patterns` / `frontend-patterns` scan your codebase once, cache its conventions (file layout, naming, error handling, DI, API client patterns), and make new code follow *your* style rather than generic style. `coding-standards` adds security checks when code touches user input, auth, secrets, or queries.
+
+**Verifying** — after creating files, `post-creation-verify` checks the wiring (registrations, route tables, DI containers — the stuff that compiles but doesn't run); `build-check` builds once per logical change set; `api-contract-validation` cross-checks frontend calls against backend endpoints (paths, methods, DTO shapes) and can emit contract docs; `feature-completeness` traces a feature end-to-end (UI → service → endpoint → DB) to catch dangling links; `self-review` runs a final invariant check against your project's cached patterns; `test-map` knows which tests cover which files so only the relevant ones run.
+
+**Remembering** — `task-journal` tracks in-flight work across sessions; `session-resume` snapshots state so "pick up where we left off" works; `lessons-learned` logs mistakes-with-fixes so they aren't repeated. The SessionStart hook surfaces all three next time.
+
+Useful things to say:
+
+| You say | What happens |
+|---------|--------------|
+| "continue where we left off" | session-resume + journal restore context |
+| "refresh the caches" | cache-refresh re-scans whatever is stale |
+| "run a self-review" | checklist pass over the diff against cached patterns |
+| "validate the API contracts" | FE↔BE alignment check |
+| "log that as a lesson" | appends to the lessons file with the why + fix |
+
+### 3. Agents
+
+For bigger jobs, delegate to the bundled subagents: **planner** (read-only — explores the codebase and returns a step-by-step implementation plan before you commit to changes), **refactor-cleaner** (finds and removes dead code, honoring never-remove rules it reads from your project config), **security-reviewer** (read-only audit — injection, authz, secrets, leakage — reports findings without modifying anything).
+
+### 4. Auto-learning (optional)
+
+The instinct subsystem learns reusable habits from your sessions, stored globally in `~/.claude/homunculus/` (not per-project). Wire `skills/auto-learning/hooks/observe.sh` as a PreToolUse/PostToolUse hook to capture observations (inputs are secret-redacted, tools filterable via `config.json`), then:
+
+- `/idev:instinct-status` — see learned instincts and confidence levels
+- `/idev:evolve` — cluster related instincts into a proposed skill/command
+- `/idev:instinct-export` / `/idev:instinct-import` — share instincts between machines or teammates (export sanitizes paths/secrets)
+
+### 5. What lives where
+
+| Path | Contents |
+|------|----------|
+| `.claude/idev/smart-context/index.json` | stack, features, conventions index |
+| `.claude/idev/backend-patterns/cache.md`, `frontend-patterns/cache.md` | convention caches + Function Index |
+| `.claude/idev/project-map/project.map.md` | annotated file map (grep it, don't load it) |
+| `.claude/idev/file-index/`, `import-graph/`, `test-map/` | lookup indexes |
+| `.claude/idev/journal.md`, `lessons.md`, `session-resume/` | cross-session memory |
+| `.claude/idev/api-contract-validation/`, `api-contracts/` | API alignment cache + generated docs |
+| `.claude/idev/rules.md`, `project-config.json` | per-project policies the skills read |
+| `~/.claude/homunculus/` | global auto-learning instincts (all projects) |
+
+Delete any cache and the owning skill regenerates it on next use; `.claude/idev/` is safe to gitignore or commit, whichever your team prefers (committing shares warm caches).
 
 ## Components
 
