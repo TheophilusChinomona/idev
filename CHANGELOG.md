@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0 — 2026-06-12
+
+### Added
+- Code-as-action browser testing, concept adapted from Microsoft's Webwright
+  (MIT — https://github.com/microsoft/Webwright): `browser-test` skill
+  (write re-runnable Playwright scripts instead of imagining browser
+  behavior; scripts accumulate into a per-project E2E library under
+  `.claude/idev/browser-tests/`; screenshot/console/network evidence;
+  app-bug-vs-script-bug failure discipline), `browser-tester` agent (runs
+  the flow end-to-end and returns a structured evidence-backed report), and
+  `/idev:browser-test` command. idev-init now scaffolds the browser-tests
+  directories. 26 skills, 8 agents, 7 commands.
+
 ## 0.5.0 — 2026-06-12
 
 ### Added

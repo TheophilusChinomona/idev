@@ -15,7 +15,7 @@ Initialize the `.claude/idev/` state directory in the current project. All idev 
 
 2. **Create the directory layout**:
    ```bash
-   mkdir -p .claude/idev/{smart-context,backend-patterns,frontend-patterns,architecture-scanner,build-check,api-contract-validation,post-creation-verify,file-index,import-graph,test-map,lessons-learned,task-journal,session-resume,project-map,api-contracts/contracts}
+   mkdir -p .claude/idev/{smart-context,backend-patterns,frontend-patterns,architecture-scanner,build-check,api-contract-validation,post-creation-verify,file-index,import-graph,test-map,lessons-learned,task-journal,session-resume,project-map,api-contracts/contracts,browser-tests/{scripts,artifacts,reports}}
    ```
 
 3. **Copy templates** (only where the destination does not exist):
