@@ -1,6 +1,6 @@
 ---
 name: smart-context
-description: "Token-optimized context loading: load the cached project index at session start, then Grep before Read, expanding only as needed. Use at session start and whenever deciding what context to load."
+description: "Token-optimized context loading: load the cached project index at session start, then Grep before Read, expanding only as needed. Use when starting a session, deciding what context to load, or locating which files implement a feature."
 ---
 
 # Smart Context Skill

@@ -64,6 +64,10 @@ for entries in h.get("hooks", {}).values():
                 print(toks[0] if toks else hk["command"].split()[0])
 ')
 
+# 8. Skill quality benchmark (all skills must pass every static check)
+python3 skills/skill-benchmark/benchmark_skills.py --strict > /dev/null \
+  || { python3 skills/skill-benchmark/benchmark_skills.py; err "skill benchmark below threshold (see scorecard above)"; }
+
 if [ "$fail" -eq 0 ]; then
   echo "All validation checks passed."
 else

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 — 2026-06-12
+
+### Added
+- `skill-benchmark` skill + `/idev:benchmark-skills` command: static quality
+  scorecard for every skill in a plugin (description triggers, naming rules,
+  body length, examples, reference resolution) plus evaluation methodology
+  (activation evals, A/B testing, multi-model targets) adapted from
+  Anthropic's skill evaluation guidance. `benchmark_skills.py --strict` is
+  now part of `scripts/validate.sh`, so CI fails if any skill regresses below
+  10/10.
+
+### Fixed
+- Findings from the first benchmark run: trigger-bearing descriptions for
+  smart-context and task-journal; example added to auto-approve-policy.
+  All 25 skills now score 10/10.
+
 ## 0.3.0 — 2026-06-12
 
 ### Added

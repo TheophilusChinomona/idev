@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 24 skills, 3 agents, 5 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 25 skills, 3 agents, 6 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -91,20 +91,21 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 ## Components
 
-### Skills (24)
+### Skills (25)
 | Group | Skills |
 |-------|--------|
 | Context | smart-context, project-map, file-index, function-extract, strategic-compact |
 | Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards, commit-style |
 | Verification | build-check, post-creation-verify, api-contract-validation, feature-completeness, self-review, test-map |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
-| Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init |
+| Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init, skill-benchmark |
 
 ### Agents (3)
 `planner` (read-only planning specialist), `refactor-cleaner` (dead-code removal), `security-reviewer` (deep security audits).
 
-### Commands (5)
+### Commands (6)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
+`/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:evolve`, `/idev:instinct-status`, `/idev:instinct-import`, `/idev:instinct-export` — the auto-learning instinct CLI (state in `~/.claude/homunculus/`).
 
 ### Optional hooks — managed by `/idev:hooks`, off by default

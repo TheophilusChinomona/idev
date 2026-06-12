@@ -19,6 +19,13 @@ Decide based on intent:
 
 3. **Bulk or wide-impact removals** — before deleting many files or rows, report the list of what will be removed first, then proceed (if explicitly requested) or wait for confirmation (if incidental).
 
+Example of case 2 (incidental) done right:
+
+```
+The refactor leaves src/utils/dateHelpers.ts with no remaining importers.
+Delete it as part of this change, or keep it?
+```
+
 ## Non-Destructive Work
 
 Additions and edits need no special treatment from this skill — proceed normally under whatever permissions the session grants.
