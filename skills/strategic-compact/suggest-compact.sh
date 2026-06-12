@@ -18,7 +18,9 @@
 
 set -u
 
-flag="${CLAUDE_PROJECT_DIR:-.}/.claude/idev/compact-suggestions-enabled"
+proj="${CLAUDE_PROJECT_DIR:-.}"
+proj="${proj//\\//}"   # normalize Windows-style paths (Git Bash)
+flag="$proj/.claude/idev/compact-suggestions-enabled"
 [ -f "$flag" ] || exit 0
 
 input=$(cat)

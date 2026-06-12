@@ -85,6 +85,8 @@ def check_skill(skill_dir, plugin_root):
         "score": sum(results.values()),
         "missing_refs": missing,
         "desc_len": len(desc),
+        "meta_chars": len(name) + len(desc),
+        "body_chars": len(text),
     }
 
 
@@ -96,6 +98,8 @@ def main():
                     help="exit 1 if any skill scores below --min-score")
     ap.add_argument("--min-score", type=int, default=len(CHECKS),
                     help="minimum passing score for --strict (default: all)")
+    ap.add_argument("--footprint", action="store_true",
+                    help="report estimated token footprint instead of quality scorecard")
     args = ap.parse_args()
 
     plugin_root = (Path(args.plugin_dir).resolve() if args.plugin_dir
@@ -108,6 +112,22 @@ def main():
     for d in sorted(skills_dir.iterdir()):
         if d.is_dir() and (d / "SKILL.md").is_file():
             rows.append(check_skill(d, plugin_root))
+
+    if args.footprint:
+        # Estimated tokens ~= chars / 4 (rough heuristic; label as estimate).
+        name_w = max((len(r["name"]) for r in rows), default=5)
+        print(f"{'Skill':<{name_w}}  {'meta~tok':>8}  {'body~tok':>8}")
+        print("-" * (name_w + 22))
+        for r in sorted(rows, key=lambda r: -r["body_chars"]):
+            print(f"{r['name']:<{name_w}}  {r['meta_chars'] // 4:>8}  "
+                  f"{r['body_chars'] // 4:>8}")
+        meta_total = sum(r["meta_chars"] for r in rows) // 4
+        body_total = sum(r["body_chars"] for r in rows) // 4
+        print(f"\nalways-loaded metadata (all {len(rows)} skills): "
+              f"~{meta_total} tokens (estimate, chars/4)")
+        print(f"on-demand bodies if ALL loaded: ~{body_total} tokens; "
+              f"heaviest body: ~{max(r['body_chars'] for r in rows) // 4}")
+        return
 
     total = len(CHECKS)
     name_w = max((len(r["name"]) for r in rows), default=5)

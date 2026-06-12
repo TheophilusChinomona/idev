@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 27 skills, 9 agents, 8 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 27 skills, 9 agents, 9 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -115,11 +115,12 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (8)
+### Commands (9)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
 `/idev:sync-branch` — merge the team base branch into the current feature branch before a PR; conflict resolution + verification + report.
+`/idev:upgrade` — reconcile a project's `.claude/idev/` state with the installed plugin version after updates (missing dirs/config keys, stale CLAUDE.md snippet and git hooks).
 `/idev:evolve`, `/idev:instinct-status`, `/idev:instinct-import`, `/idev:instinct-export` — the auto-learning instinct CLI (state in `~/.claude/homunculus/`).
 
 ### Optional hooks — managed by `/idev:hooks`, off by default
@@ -149,6 +150,18 @@ The canonical feature workflow chained from the skills:
 lessons-learned → create files → post-creation-verify → build-check
 → api-contract-validation → feature-completeness → self-review → cache-refresh
 ```
+
+## Windows support
+
+The hook and git-hook scripts are bash. On Windows, install **Git for Windows** (puts `bash`, `grep`, `awk` on PATH — the SessionStart hook, observer, compact suggester, and commit hooks then work under Git Bash; the compact suggester also ships a native `.ps1`). Two caveats:
+- Commands document `python3` — on Windows substitute `python` (or the `py` launcher).
+- The auto-learning background analyzer (`start-observer.sh`) is Unix-only (PID files/signals); observation capture itself works everywhere.
+
+## Quality & measurements
+
+- `docs/token-footprint.md` — measured always-loaded cost (~1.7k tokens of skill metadata + ~850 snippet) vs on-demand bodies; re-baseline with `benchmark_skills.py --footprint`.
+- `docs/evals/` — activation eval reports (latest: 31/35 strict TP, 0/15 FP across 5 key skills, offline routing simulation).
+- CI enforces the 10-check skill benchmark at 10/10 for every skill on every push.
 
 ## Philosophy
 

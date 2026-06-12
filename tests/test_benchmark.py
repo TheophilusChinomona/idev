@@ -40,6 +40,13 @@ def test_detects_bad_skill(tmp_path):
     assert strict.returncode == 1
 
 
+def test_footprint_mode():
+    res = run("--footprint")
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "always-loaded metadata" in res.stdout
+    assert "estimate" in res.stdout
+
+
 def test_good_skill_passes(tmp_path):
     good = tmp_path / "skills" / "tidy-skill"
     good.mkdir(parents=True)

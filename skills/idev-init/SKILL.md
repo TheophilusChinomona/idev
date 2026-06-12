@@ -31,6 +31,7 @@ Initialize the `.claude/idev/` state directory in the current project. All idev 
    ```json
    { "lastTask": null, "modifiedFiles": [], "openIssues": [], "savedAt": null }
    ```
+   Also stamp the plugin version into `.claude/idev/.idev-version` (read it from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`) — `/idev:upgrade` uses this to detect drift after plugin updates.
 
 5. **Offer the CLAUDE.md snippet** (or do it directly if the user passed `--with-claude-md-snippet`): append the contents of `${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md` to the project's `CLAUDE.md` (create the file if missing). It contains the idev operating guide (cache-first context rules, skill workflow chain, agent delegation map) plus per-project policies (protected branches, migration policy, API config) — tell the user to review the FILL IN / KEEP ONLY IF sections. If an older idev snippet already exists in CLAUDE.md (look for the `===== idev plugin` marker), replace it instead of appending a duplicate.
 

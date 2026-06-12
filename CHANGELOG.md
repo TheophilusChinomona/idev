@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.9.0 — 2026-06-12
+
+### Added
+- `/idev:upgrade` command: reconciles a project's `.claude/idev/` state
+  with the installed plugin version (missing dirs, merged config keys,
+  CLAUDE.md snippet refresh preserving tuned policies, stale idev git-hook
+  reinstall). idev-init now stamps `.claude/idev/.idev-version`.
+- Windows support: backslash normalization in session-start.sh and
+  suggest-compact.sh, README Windows section (Git for Windows requirement,
+  python vs python3, start-observer is Unix-only).
+- `benchmark_skills.py --footprint`: estimated token cost report;
+  baseline recorded in `docs/token-footprint.md` (~1.7k always-loaded
+  metadata, ~850 snippet, bodies on demand).
+- First activation eval (`docs/evals/2026-06-12-activation.md`): 31/35
+  strict true-positive, 0/15 false-positive across branch-sync,
+  browser-test, build-check, post-creation-verify, smart-context
+  (offline routing simulation, 5 independent judges).
+
+### Fixed
+- smart-context description no longer claims feature→file lookup (the
+  one overlap the eval found) — that trigger belongs to file-index.
+
 ## 0.8.0 — 2026-06-12
 
 ### Added

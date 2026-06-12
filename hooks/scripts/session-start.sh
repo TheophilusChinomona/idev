@@ -3,7 +3,10 @@
 # in CLAUDE.md ("Auto-Startup Sequence"). Reads per-project state from
 # .claude/idev/ in the current working directory. Cheap and silent when absent.
 
-IDEV_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/idev"
+# Normalize Windows-style backslashes (Git Bash on Windows) to forward slashes.
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+PROJECT_DIR="${PROJECT_DIR//\\//}"
+IDEV_DIR="$PROJECT_DIR/.claude/idev"
 
 # Truly silent when the project has no idev state (see README for /idev:idev-init).
 if [ ! -d "$IDEV_DIR" ]; then
