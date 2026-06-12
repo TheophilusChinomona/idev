@@ -25,7 +25,7 @@ Then, inside each project, scaffold the per-project state:
 /idev:idev-init
 ```
 
-`/idev:idev-init` is the one required setup step per project: it creates `.claude/idev/` (caches, task journal, lessons file, config templates) and offers to append the per-project policy snippet (`templates/claude-md-snippet.md`) to the project's `CLAUDE.md`. The SessionStart hook stays completely silent in projects where `.claude/idev/` doesn't exist, so nothing happens until you run it.
+`/idev:idev-init` is the one required setup step per project: it creates `.claude/idev/` (caches, task journal, lessons file, config templates) and offers to append the operating-guide snippet (`templates/claude-md-snippet.md`) to the project's `CLAUDE.md` — the always-loaded routing layer that tells Claude the cache-first context rules, the skill workflow chain, the agent delegation map, and your per-project policies. The SessionStart hook stays completely silent in projects where `.claude/idev/` doesn't exist, so nothing happens until you run it.
 
 ## How it works
 
@@ -38,7 +38,7 @@ Two ideas drive everything:
 
 ### 1. First session in a project
 
-Run `/idev:idev-init` once. It creates `.claude/idev/` with the journal, lessons file, rules file, and config templates, offers to append the policy snippet to your `CLAUDE.md`, and generates the smart-context index (`scanner.py` detects your stack, features, and conventions). From then on, every session starts with that context injected automatically.
+Run `/idev:idev-init` once. It creates `.claude/idev/` with the journal, lessons file, rules file, and config templates, offers to append the operating-guide snippet to your `CLAUDE.md` (how Claude should drive the plugin in this project, plus your tunable policies), and generates the smart-context index (`scanner.py` detects your stack, features, and conventions). From then on, every session starts with that context injected automatically.
 
 ### 2. Day-to-day development
 

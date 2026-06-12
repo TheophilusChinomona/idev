@@ -32,7 +32,7 @@ Initialize the `.claude/idev/` state directory in the current project. All idev 
    { "lastTask": null, "modifiedFiles": [], "openIssues": [], "savedAt": null }
    ```
 
-5. **Offer the CLAUDE.md snippet** (or do it directly if the user passed `--with-claude-md-snippet`): append the contents of `${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md` to the project's `CLAUDE.md` (create the file if missing). This holds per-project policies (protected branches, migration policy, API config) that the user should review and tune.
+5. **Offer the CLAUDE.md snippet** (or do it directly if the user passed `--with-claude-md-snippet`): append the contents of `${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md` to the project's `CLAUDE.md` (create the file if missing). It contains the idev operating guide (cache-first context rules, skill workflow chain, agent delegation map) plus per-project policies (protected branches, migration policy, API config) — tell the user to review the FILL IN / KEEP ONLY IF sections. If an older idev snippet already exists in CLAUDE.md (look for the `===== idev plugin` marker), replace it instead of appending a duplicate.
 
 6. **Offer the low-prompt permissions preset**: Ask whether to allowlist the plugin's read-only scripts and read-only git commands in the project's `.claude/settings.json`, so they run without permission prompts. If yes: resolve `${CLAUDE_PLUGIN_ROOT}` to its absolute path, then MERGE (never replace existing entries) this into `.claude/settings.json`'s `permissions.allow` array, creating the file if missing:
    ```json

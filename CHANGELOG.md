@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0 — 2026-06-12
+
+### Added
+- `templates/claude-md-snippet.md` upgraded from a policies-only snippet to
+  a full per-project operating guide: cache-first context discipline, the
+  skill workflow chain (including browser-test), an agent delegation map,
+  session-boundary rules, and commit-style pointer — followed by the
+  tunable policy sections. idev-init now replaces an existing idev snippet
+  instead of appending a duplicate.
+- Repo-root `CLAUDE.md` contributor guide (validation gates, frontmatter
+  wiring rules, the update-everything checklist for adding/removing
+  components, release procedure).
+
 ## 0.6.0 — 2026-06-12
 
 ### Added
