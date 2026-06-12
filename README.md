@@ -1,14 +1,27 @@
 # idev — Token-Optimized Development Workflow Plugin
 
+[![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
+
 A Claude Code plugin packaging 23 skills, 3 agents, 4 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
-```bash
-# test locally
-claude --plugin-dir /path/to/idev
+From GitHub (inside Claude Code):
 
-# then, inside each project, scaffold the per-project state:
+```
+/plugin marketplace add TheophilusChinomona/idev
+/plugin install idev@idev
+```
+
+Or test a local checkout:
+
+```bash
+claude --plugin-dir /path/to/idev
+```
+
+Then, inside each project, scaffold the per-project state:
+
+```
 /idev:idev-init
 ```
 

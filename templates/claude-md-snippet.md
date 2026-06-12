@@ -19,7 +19,7 @@ lessons-learned → create files → post-creation-verify → build-check → ap
 - Frontend connects via `{{FRONTEND_API_ENV_VAR}}`
 
 ### Database Migration Policy (KEEP ONLY IF YOUR TEAM REQUIRES MANUAL SQL REVIEW)
-Never run EF Core / code-first migration commands. Instead, write a change-request file to `.claude/docs/database-changes/YYYY-MM-DD_description.txt` containing: description, APPLY script, ROLLBACK script, affected table, and reason. The DBA reviews and executes manually.
+Never run EF Core / code-first migration commands. Instead, write a change-request file to `.claude/idev/database-changes/YYYY-MM-DD_description.txt` containing: description, APPLY script, ROLLBACK script, affected table, and reason. The DBA reviews and executes manually.
 
 ### Protected Branch Commit Prevention (KEEP — adjust branch list if needed)
 ALWAYS refuse to commit, push, merge, or rebase onto: `main`, `master`, `developer`, `develop`, `dev`, `dev_release`, `release`, `staging`, `production`, `prod`. Before any git commit/push: check `git branch --show-current`; if protected, refuse and tell the user to switch to a feature branch. No exceptions, even if the user insists.
