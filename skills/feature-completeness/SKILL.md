@@ -1,6 +1,6 @@
 ---
 name: feature-completeness
-description: Traces a feature end-to-end (UI, hook, service, API, controller, database) to verify every link is wired. Use after completing a multi-layer feature or when asked whether a feature is fully connected.
+description: "Traces a feature end-to-end (UI, hook, service, API, controller, database) to verify every link is wired. Use after completing a multi-layer feature or when asked whether a feature is fully connected."
 ---
 
 # Feature Completeness Skill
@@ -90,7 +90,8 @@ Check: Does the hook call the service function?
 Check: Does the service make an HTTP call to the correct URL?
   Read service file → find axios/fetch call
   Verify: URL matches a known backend route (check architecture-scanner cache)
-  Fail if: URL has no matching backend route (lesson L003)
+  Fail if: URL has no matching backend route (a recurring bug class — see the
+  lessons-learned skill's log for project-specific instances)
 ```
 
 ### Link 4: API URL → Controller
@@ -114,14 +115,15 @@ Check: Does the controller call the service method?
 Check: Does the service access the database?
   Read service method → find repository/DB calls
   Verify: entity type is correct, query filters are present
-  Fail if: repository for this entity isn't registered (lesson L001)
+  Fail if: repository for this entity isn't registered (a recurring bug class —
+  see the lessons-learned skill's log for project-specific instances)
 ```
 
 ### Link 7: Database → Table
 ```
 Check: Does the database table exist?
   Check DbContext for DbSet declaration
-  Check for database change script in .claude/docs/database-changes/
+  Check for database change script in .claude/idev/database-changes/
   Warn if: DbSet exists but no table creation script found
 ```
 
@@ -162,15 +164,15 @@ Issues this skill catches that compile but fail at runtime:
    → Service depends on unregistered repository (post-creation-verify catches this)
 
 4. Everything works but wrong data appears
-   → Query filter missing ClientId (multi-tenancy leak)
-   → Soft delete filter missing RecordStatusId check
+   → Query filter missing the tenant filter column (multi-tenancy leak; e.g., a ClientId column)
+   → Query missing the soft-delete flag check (e.g., a RecordStatusId column)
 
 5. Feature works for create but not update/delete
    → Only some CRUD operations were wired
    → Missing mutation hooks or service functions
 
 6. Page loads but route doesn't work
-   → Component created but route not registered in Routes.tsx
+   → Component created but route not registered in the project's route registration file (e.g., Routes.tsx)
 ```
 
 ---

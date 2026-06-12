@@ -1,6 +1,6 @@
 ---
 name: task-journal
-description: Persistent task log across sessions: pending tasks, completed work, known issues, backlog. Load at session start; update after completing tasks or finding blockers.
+description: "Persistent task log across sessions: pending tasks, completed work, known issues, backlog. Load at session start; update after completing tasks or finding blockers."
 ---
 
 # Task Journal Skill

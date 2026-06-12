@@ -1,12 +1,12 @@
 ---
 name: post-creation-verify
-description: Verifies all required registrations (DI, repository, DbContext, routes, exports) after creating new feature files, and auto-fixes missing ones. Run before build-check.
+description: "Verifies all required registrations (DI, repository, DbContext, routes, exports) after creating new feature files, and auto-fixes missing ones. Use when new feature files have just been created, before running build-check."
 ---
 
 # Post-Creation Verification Skill
 
 ## Purpose
-After creating a new feature (entity, service, controller, component, hook, etc.), automatically verify that ALL required registrations, imports, and wiring are in place. Catches the classic bug class of a missing registration (e.g., a forgotten `IGenericRepository<Entity>` DI entry).
+After creating a new feature (entity, service, controller, component, hook, etc.), automatically verify that ALL required registrations, imports, and wiring are in place. Catches the classic bug class of a missing registration (illustrative example: a forgotten `IGenericRepository<Entity>` DI entry in a .NET project).
 
 ## Activation
 Run automatically after creating any new feature file(s). This is a pre-build check — run BEFORE the build-check skill.
@@ -33,7 +33,8 @@ Scan the codebase to find where things get registered/wired. This adapts to any 
      Grep for "DbSet<" → DbContext file
   3. Find AutoMapper/Extension profiles:
      Grep for "CreateMap|Profile" → Mapper config files
-  4. Catalog what each registration file contains:
+  4. Catalog what each registration file contains (illustrative — detect the
+     project's actual repository/DI pattern, e.g.:)
      - Service DI: maps IService → Service
      - Data DI: maps IGenericRepository<Entity> → GenericRepository<Entity>
      - DbContext: DbSet<Entity> declarations
@@ -76,7 +77,7 @@ React/Frontend:
 
 ## Phase 2: Generate Cache
 
-Write detected registration points to `.claude/idev/post-creation-verify/cache.json`:
+Write detected registration points to `.claude/idev/post-creation-verify/cache.json` (example below shows a .NET-style project — patterns are whatever the scan detected):
 
 ```json
 {
@@ -184,9 +185,9 @@ These are auto-generated from cache, not hardcoded. Examples of what gets detect
 □ Service created in Services/{Feature}/
 □ Controller created in Controllers/
 □ Service registered in Services DI file
-□ Repository registered in Data DI file  ← THIS IS WHAT WE MISSED
+□ Repository registered in Data DI file (commonly missed — verify explicitly)
 □ DbSet added to DbContext
-□ Database change script created (if no-migration rule)
+□ Database change script created (if the project rules file — `.claude/idev/rules.md` or project config — has a no-migration rule)
 ```
 
 ### React Frontend Feature

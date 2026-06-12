@@ -1,56 +1,49 @@
 #!/bin/bash
-# Strategic Compact Suggester
-# Runs on PreToolUse or periodically to suggest manual compaction at logical intervals
+# Strategic Compact Suggester (idev plugin)
+#
+# PostToolUse hook (matcher: "Edit|Write"). Reads the hook JSON from stdin,
+# keeps a per-session counter, and every N Edit/Write calls (default 50,
+# override with IDEV_COMPACT_THRESHOLD) emits hookSpecificOutput JSON on
+# stdout so Claude sees a reminder to suggest /compact at a logical boundary.
 #
 # Why manual over auto-compact:
 # - Auto-compact happens at arbitrary points, often mid-task
 # - Strategic compacting preserves context through logical phases
-# - Compact after exploration, before execution
-# - Compact after completing a milestone, before starting next
+#   (after exploration/planning/debugging, after a milestone)
 #
-# Hook config (in ~/.claude/settings.json):
-# {
-#   "hooks": {
-#     "PreToolUse": [{
-#       "matcher": "tool == \"Edit\" || tool == \"Write\"",
-#       "hooks": [{
-#         "type": "command",
-#         "command": "${CLAUDE_PLUGIN_ROOT}/skills/strategic-compact/suggest-compact.sh"
-#       }]
-#     }]
-#   }
-# }
-#
-# Criteria for suggesting compact:
-# - Session has been running for extended period
-# - Large number of tool calls made
-# - Transitioning from research/exploration to implementation
-# - Plan has been finalized
-#
-# NOTE: This script is for Unix/Linux/macOS. Windows users need PowerShell version.
+# See SKILL.md in this folder for the settings.json registration snippet.
+# Always exits 0; emits nothing below the threshold.
 
-# Track tool call count (fixed filename so it persists across hook invocations)
-# Uses date-based reset - counter resets each day for fresh sessions
-TODAY=$(date +%Y%m%d)
-COUNTER_FILE="/tmp/claude-strategic-compact-${TODAY}"
-THRESHOLD=${COMPACT_THRESHOLD:-50}
-REMINDER_INTERVAL=${COMPACT_REMINDER_INTERVAL:-25}
+set -u
 
-# Initialize or increment counter
-if [ -f "$COUNTER_FILE" ]; then
-  count=$(cat "$COUNTER_FILE")
-  count=$((count + 1))
-else
-  count=1
+input=$(cat)
+
+# Extract session_id from the hook JSON, sanitize to a safe filename token
+session_id=$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tr -cd 'A-Za-z0-9._-')
+[ -n "$session_id" ] || session_id="default"
+
+threshold=${IDEV_COMPACT_THRESHOLD:-50}
+case "$threshold" in
+  ''|*[!0-9]*) threshold=50 ;;
+esac
+[ "$threshold" -ge 1 ] || threshold=50
+
+# Per-session counter (not shared across sessions/projects)
+counter_file="${TMPDIR:-/tmp}/claude-idev-compact-${session_id}"
+
+count=0
+if [ -f "$counter_file" ]; then
+  count=$(cat "$counter_file" 2>/dev/null)
+  # Reset if contents are not numeric (corrupt/tampered file)
+  case "$count" in
+    ''|*[!0-9]*) count=0 ;;
+  esac
 fi
-echo "$count" > "$COUNTER_FILE"
+count=$((count + 1))
+printf '%s' "$count" > "$counter_file"
 
-# Suggest compact after threshold tool calls
-if [ "$count" -eq "$THRESHOLD" ]; then
-  echo "[StrategicCompact] $THRESHOLD tool calls reached - consider /compact if transitioning phases" >&2
+if [ $((count % threshold)) -eq 0 ]; then
+  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[strategic-compact] %s Edit/Write calls this session. If you are at a logical boundary (plan finalized, milestone complete, bug fixed), consider suggesting /compact to the user before continuing. Do not interrupt mid-implementation."}}\n' "$count"
 fi
 
-# Suggest at regular intervals after threshold
-if [ "$count" -gt "$THRESHOLD" ] && [ $((count % REMINDER_INTERVAL)) -eq 0 ]; then
-  echo "[StrategicCompact] $count tool calls - good checkpoint for /compact if context is stale" >&2
-fi
+exit 0

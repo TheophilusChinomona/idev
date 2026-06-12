@@ -1,6 +1,6 @@
 ---
 name: smart-context
-description: Token-optimized context loading: load the cached project index at session start, then Grep before Read, expanding only as needed. Use at session start and whenever deciding what context to load.
+description: "Token-optimized context loading: load the cached project index at session start, then Grep before Read, expanding only as needed. Use at session start and whenever deciding what context to load."
 ---
 
 # Smart Context Skill
@@ -17,6 +17,20 @@ This skill is ALWAYS ACTIVE. Apply these rules to every task.
 
 ---
 
+## Generating the index
+
+If `index.json` is missing (e.g. the session-start hook reports no index), generate it by running the scanner from the project root:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/smart-context/scanner.py"
+```
+
+This writes `.claude/idev/smart-context/index.json` with the detected stack, structure roots, feature names, and file-naming patterns.
+
+**Fallback (no python3 available):** build the index manually — detect the stack from `package.json` / `*.csproj` / `requirements.txt` / `go.mod`, list feature directory names under `features/` or `modules/`, note naming patterns (e.g. `*Controller.*`, `*.hook.*`), and write the same JSON shape (`stack`, `structure`, `features`, `patterns`) to `.claude/idev/smart-context/index.json`.
+
+---
+
 ## Phase 1: Session Start
 
 Load ONLY the lightweight index:
@@ -24,10 +38,10 @@ Load ONLY the lightweight index:
 .claude/idev/smart-context/index.json
 ```
 
-This gives you:
-- Tech stack (React + .NET)
-- Feature names (50 features)
-- File patterns (Page, Container, Service, Controller)
+This gives you (contents depend on what the scanner detected):
+- Tech stack (e.g. React + .NET, Next.js + Python — whatever the project uses)
+- Detected feature names (up to 50)
+- File-naming patterns (e.g. Page, Container, Service, Controller)
 - Project structure roots
 
 **DO NOT load the full project-map yet.**
@@ -38,7 +52,7 @@ This gives you:
 
 ### Step 2.1: Extract Keywords
 From user message, identify:
-- **Feature name**: orders, customers, users, auth, payments, etc. (from index.json features list)
+- **Feature name**: whatever appears in index.json's features list (e.g. orders, customers, auth)
 - **Action type**: fix, add, update, delete, explain, find
 - **Layer**: frontend, backend, api, database, full-stack
 
@@ -71,7 +85,7 @@ Load only the "FE → BE Mappings" section if it exists
 ```
 
 ### Never Do This
-❌ Read entire project.map.md (3,800 lines)
+❌ Read the entire project.map.md (it can run to thousands of lines)
 ❌ Load all controllers "to understand the project"
 ❌ Pre-load map sections not related to current task
 
@@ -98,7 +112,9 @@ If needed, follow imports to related files
 
 ---
 
-## Phase 5: Pattern Reference (from index.json)
+## Phase 5: Pattern Reference
+
+Use the `patterns` section of index.json. Illustrative examples (the real globs come from index.json):
 
 | Pattern | Glob |
 |---------|------|
@@ -113,22 +129,17 @@ If needed, follow imports to related files
 
 ## Feature Keywords → Search Patterns
 
-Examples — the real keyword list comes from the features detected in index.json:
+Illustrative examples ONLY — the real keyword list is the `features` array in index.json; build the same `**/[Xx]keyword*` glob for whatever features that project actually has:
 
 | Keyword | Search |
 |---------|--------|
 | order, orders | `**/[Oo]rder*` |
 | customer | `**/[Cc]ustomer*` |
 | invoice | `**/[Ii]nvoice*` |
-| report | `**/[Rr]eport*` |
 | auth, login | `**/[Aa]uth*` |
-| team | `**/[Tt]eam*` |
-| course | `**/[Cc]ourse*` |
-| buddy | `**/[Bb]udd*` |
 | payment | `**/[Pp]ay*` |
 | user | `**/[Uu]ser*` |
 | dashboard | `**/[Dd]ashboard*` |
-| whatsapp | `**/[Ww]hats[Aa]pp*` |
 
 ---
 

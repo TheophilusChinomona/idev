@@ -1,55 +1,59 @@
-# Strategic Compact Suggester (Windows PowerShell Version)
-# Runs on PreToolUse or periodically to suggest manual compaction at logical intervals
+# Strategic Compact Suggester (idev plugin - Windows PowerShell version)
 #
-# Why manual over auto-compact:
-# - Auto-compact happens at arbitrary points, often mid-task
-# - Strategic compacting preserves context through logical phases
-# - Compact after exploration, before execution
-# - Compact after completing a milestone, before starting next
+# PostToolUse hook (matcher: "Edit|Write"). Reads the hook JSON from stdin,
+# keeps a per-session counter in $env:TEMP, and every N Edit/Write calls
+# (default 50, override with IDEV_COMPACT_THRESHOLD) emits hookSpecificOutput
+# JSON on stdout so Claude sees a reminder to suggest /compact at a logical
+# boundary.
 #
-# Hook config (in ~/.claude/settings.json):
-# {
-#   "hooks": {
-#     "PreToolUse": [{
-#       "matcher": "tool == \"Edit\" || tool == \"Write\"",
-#       "hooks": [{
-#         "type": "command",
-#         "command": "powershell -ExecutionPolicy Bypass -File \"$env:USERPROFILE\\.claude\\skills\\strategic-compact\\suggest-compact.ps1\""
-#       }]
-#     }]
-#   }
-# }
+# This script lives in the installed idev plugin at:
+#   <idev-plugin-root>\skills\strategic-compact\suggest-compact.ps1
+# See SKILL.md in this folder for the settings.json registration snippet
+# (use the absolute plugin path - ${CLAUDE_PLUGIN_ROOT} does not expand in
+# user settings).
 #
-# Criteria for suggesting compact:
-# - Session has been running for extended period
-# - Large number of tool calls made
-# - Transitioning from research/exploration to implementation
-# - Plan has been finalized
+# Always exits 0; emits nothing below the threshold.
 
-# Configuration
-$Threshold = if ($env:COMPACT_THRESHOLD) { [int]$env:COMPACT_THRESHOLD } else { 50 }
-$ReminderInterval = if ($env:COMPACT_REMINDER_INTERVAL) { [int]$env:COMPACT_REMINDER_INTERVAL } else { 25 }
+$ErrorActionPreference = "SilentlyContinue"
 
-# Track tool call count (fixed filename so it persists across hook invocations)
-# Uses date-based reset - counter resets each day for fresh sessions
-$Today = Get-Date -Format "yyyyMMdd"
-$CounterFile = "$env:TEMP\claude-strategic-compact-$Today.txt"
+# Read the hook JSON from stdin and extract session_id
+$raw = [Console]::In.ReadToEnd()
+$sessionId = "default"
+try {
+    $json = $raw | ConvertFrom-Json
+    if ($json.session_id) {
+        $clean = [string]$json.session_id -replace '[^A-Za-z0-9._-]', ''
+        if ($clean) { $sessionId = $clean }
+    }
+} catch {}
 
-# Initialize or increment counter
-if (Test-Path $CounterFile) {
-    $count = [int](Get-Content $CounterFile -Raw)
-    $count++
-} else {
-    $count = 1
-}
-Set-Content -Path $CounterFile -Value $count -NoNewline
-
-# Suggest compact after threshold tool calls
-if ($count -eq $Threshold) {
-    Write-Host "[StrategicCompact] $Threshold tool calls reached - consider /compact if transitioning phases" -ForegroundColor Yellow
+$threshold = 50
+if ($env:IDEV_COMPACT_THRESHOLD -and $env:IDEV_COMPACT_THRESHOLD -match '^\d+$') {
+    $parsed = [int]$env:IDEV_COMPACT_THRESHOLD
+    if ($parsed -ge 1) { $threshold = $parsed }
 }
 
-# Suggest at regular intervals after threshold
-if ($count -gt $Threshold -and ($count % $ReminderInterval) -eq 0) {
-    Write-Host "[StrategicCompact] $count tool calls - good checkpoint for /compact if context is stale" -ForegroundColor Yellow
+# Per-session counter (not shared across sessions/projects)
+$counterFile = Join-Path $env:TEMP "claude-idev-compact-$sessionId"
+
+$count = 0
+if (Test-Path $counterFile) {
+    $contents = (Get-Content $counterFile -Raw).Trim()
+    # Reset if contents are not numeric (corrupt/tampered file)
+    if ($contents -match '^\d+$') { $count = [int]$contents }
 }
+$count++
+Set-Content -Path $counterFile -Value $count -NoNewline
+
+if (($count % $threshold) -eq 0) {
+    $msg = "[strategic-compact] $count Edit/Write calls this session. If you are at a logical boundary (plan finalized, milestone complete, bug fixed), consider suggesting /compact to the user before continuing. Do not interrupt mid-implementation."
+    $payload = @{
+        hookSpecificOutput = @{
+            hookEventName     = "PostToolUse"
+            additionalContext = $msg
+        }
+    } | ConvertTo-Json -Compress
+    Write-Output $payload
+}
+
+exit 0

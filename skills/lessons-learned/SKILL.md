@@ -1,12 +1,14 @@
 ---
 name: lessons-learned
-description: Persistent memory of past mistakes, fixes, and gotchas with prevention steps. Load before creating new features; append a lesson after fixing any bug or discovering non-obvious behavior.
+description: "Persistent memory of past mistakes, fixes, and gotchas with prevention steps. Use when starting a new feature (read prevention steps) or after fixing any bug or discovering non-obvious behavior (append a lesson)."
 ---
 
 # Lessons Learned Skill
 
 ## Purpose
 Persistent memory of mistakes, fixes, and gotchas discovered during development. Prevents repeating the same errors across sessions. Acts as a project-specific "do/don't" reference.
+
+Note: lessons-learned is the manually-curated, project-local log; the auto-learning skill is the separate automatic cross-project instinct system.
 
 ## Activation
 - **Write**: After fixing a bug, discovering a gotcha, or learning something non-obvious
@@ -24,6 +26,8 @@ Each entry records: what went wrong, why, and how to prevent it next time.
 ---
 
 ## Lesson Format
+
+The L001 entry below is an ILLUSTRATIVE EXAMPLE (from a .NET project) showing the expected level of detail — real entries record this project's actual lessons:
 
 ```markdown
 # Lessons Learned

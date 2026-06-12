@@ -1,135 +1,40 @@
 ---
-name: instinct-import
-description: Import instincts from teammates, Skill Creator, or other sources
-command: /instinct-import
-implementation: python3 ${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py import <file>
+description: Import instincts from a teammate's export file or a URL
+argument-hint: "<file-or-url> [--dry-run] [--force] [--min-confidence <n>]"
 ---
 
-# Instinct Import Command
+# Instinct Import
 
-## Implementation
+Import instincts from a file or URL into `~/.claude/homunculus/instincts/inherited/`.
+
+## How to Run
+
+Run the instinct CLI, passing through the user's source and flags:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py import <file-or-url> [--dry-run] [--force] [--min-confidence 0.7]
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py" import $ARGUMENTS
 ```
 
-Import instincts from:
-- Teammates' exports
-- Skill Creator (repo analysis)
-- Community collections
-- Previous machine backups
+## Supported Flags (these are the only ones)
 
-## Usage
+- `--dry-run`: preview what would be imported without writing anything
+- `--force`: skip the confirmation prompt
+- `--min-confidence <n>`: only import instincts at or above this confidence
 
-```
-/instinct-import team-instincts.yaml
-/instinct-import https://github.com/org/repo/instincts.yaml
-/instinct-import --from-skill-creator acme/webapp
-```
+Note: when run non-interactively (which is how this command runs), the CLI does not prompt — it proceeds as confirmed. Use `--dry-run` first if the user wants a preview before committing.
 
-## What to Do
+## What the CLI Does
 
-1. Fetch the instinct file (local path or URL)
-2. Parse and validate the format
-3. Check for duplicates with existing instincts
-4. Merge or add new instincts
-5. Save to `~/.claude/homunculus/instincts/inherited/`
+1. Fetches the source (local path or http/https URL) and parses its instinct blocks
+2. Compares against existing instincts by `id`:
+   - New ids are added to a timestamped file in `~/.claude/homunculus/instincts/inherited/`
+   - Existing ids with higher imported confidence are updated **in place** in their original file (no duplicate copies)
+   - Existing ids with equal/lower confidence are skipped
+3. Marks added instincts with `source: inherited` and `imported_from`
 
-## Import Process
+## Recommended Flow
 
-```
-📥 Importing instincts from: team-instincts.yaml
-================================================
-
-Found 12 instincts to import.
-
-Analyzing conflicts...
-
-## New Instincts (8)
-These will be added:
-  ✓ use-zod-validation (confidence: 0.7)
-  ✓ prefer-named-exports (confidence: 0.65)
-  ✓ test-async-functions (confidence: 0.8)
-  ...
-
-## Duplicate Instincts (3)
-Already have similar instincts:
-  ⚠️ prefer-functional-style
-     Local: 0.8 confidence, 12 observations
-     Import: 0.7 confidence
-     → Keep local (higher confidence)
-
-  ⚠️ test-first-workflow
-     Local: 0.75 confidence
-     Import: 0.9 confidence
-     → Update to import (higher confidence)
-
-## Conflicting Instincts (1)
-These contradict local instincts:
-  ❌ use-classes-for-services
-     Conflicts with: avoid-classes
-     → Skip (requires manual resolution)
-
----
-Import 8 new, update 1, skip 3?
-```
-
-## Merge Strategies
-
-### For Duplicates
-When importing an instinct that matches an existing one:
-- **Higher confidence wins**: Keep the one with higher confidence
-- **Merge evidence**: Combine observation counts
-- **Update timestamp**: Mark as recently validated
-
-### For Conflicts
-When importing an instinct that contradicts an existing one:
-- **Skip by default**: Don't import conflicting instincts
-- **Flag for review**: Mark both as needing attention
-- **Manual resolution**: User decides which to keep
-
-## Source Tracking
-
-Imported instincts are marked with:
-```yaml
-source: "inherited"
-imported_from: "team-instincts.yaml"
-imported_at: "2025-01-22T10:30:00Z"
-original_source: "session-observation"  # or "repo-analysis"
-```
-
-## Skill Creator Integration
-
-When importing from Skill Creator:
-
-```
-/instinct-import --from-skill-creator acme/webapp
-```
-
-This fetches instincts generated from repo analysis:
-- Source: `repo-analysis`
-- Higher initial confidence (0.7+)
-- Linked to source repository
-
-## Flags
-
-- `--dry-run`: Preview without importing
-- `--force`: Import even if conflicts exist
-- `--merge-strategy <higher|local|import>`: How to handle duplicates
-- `--from-skill-creator <owner/repo>`: Import from Skill Creator analysis
-- `--min-confidence <n>`: Only import instincts above threshold
-
-## Output
-
-After import:
-```
-✅ Import complete!
-
-Added: 8 instincts
-Updated: 1 instinct
-Skipped: 3 instincts (2 duplicates, 1 conflict)
-
-New instincts saved to: ~/.claude/homunculus/instincts/inherited/
-
-Run /instinct-status to see all instincts.
-```
+1. Run with `--dry-run` first and show the user the NEW/UPDATE/SKIP summary.
+2. If the user approves, re-run without `--dry-run`.
+3. Afterwards, suggest `/idev:instinct-status` to review the merged set.
+4. If the user reports a conflict (an imported instinct contradicts a local one), resolve it manually by editing the relevant files under `~/.claude/homunculus/instincts/` — the CLI does not do conflict detection.

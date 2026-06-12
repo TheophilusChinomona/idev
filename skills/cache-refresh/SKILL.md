@@ -1,6 +1,6 @@
 ---
 name: cache-refresh
-description: Keeps idev skill caches fresh after source files are created, deleted, or renamed. Use after structural file changes or when the user says refresh caches.
+description: "Keeps idev skill caches fresh after source files are created, deleted, or renamed. Use after structural file changes or when the user says refresh caches."
 ---
 
 # Cache Refresh Skill
@@ -11,7 +11,10 @@ Keep all skill caches fresh by detecting when source files change and triggering
 ## Activation
 - **Incremental**: After Claude creates, deletes, or renames a file during a task
 - **Full refresh**: When user says "refresh caches" or when caches are older than 7 days
-- **On session start**: Quick staleness check (compare cache date vs recent git changes)
+
+Note: skills do not run at session start. The session-start hook surfaces cache ages;
+this skill defines what to do when the user or another skill asks for a refresh
+(for example, after the hook reports stale caches).
 
 ---
 
@@ -28,16 +31,16 @@ After Claude creates, renames, or deletes a source file, determine which caches 
 ```
 File change → Affected caches:
 
-New .cs file (Entity)       → file-index, backend-patterns (function-index), post-creation-verify
+New .cs file (Entity)       → file-index, backend-patterns (Function Index), post-creation-verify
 New .cs file (Controller)   → file-index, architecture-scanner (apiRoutes), backend-patterns
 New .cs file (Service)      → file-index, backend-patterns
-New .tsx/.ts file            → file-index, frontend-patterns (function-index)
+New .tsx/.ts file            → file-index, frontend-patterns (Function Index)
 New .service.ts file         → file-index, architecture-scanner (apiRoutes)
 New .hook.ts file            → file-index, frontend-patterns
 New route added              → architecture-scanner, file-index
-DI registration changed      → post-creation-verify (line numbers may shift)
-DbContext changed             → post-creation-verify (line numbers may shift)
-Any file deleted              → file-index (remove entry), function-index (remove entry)
+DI registration changed      → post-creation-verify (registration points may shift)
+DbContext changed             → post-creation-verify (registration points may shift)
+Any file deleted              → file-index (remove entry), pattern cache Function Index (remove entry)
 ```
 
 ---
@@ -48,16 +51,16 @@ Any file deleted              → file-index (remove entry), function-index (rem
 ```
 1. Add new files to file-index/index.md under the correct feature section
 2. Add new API routes to architecture-scanner/cache.json apiRoutes
-3. Add new function line numbers to pattern cache Function Index sections
-4. Update post-creation-verify line numbers if DI/DbContext files were modified
-5. Update session-resume with modified files list
+3. Add new function entries to pattern cache Function Index sections
+4. Update post-creation-verify registration points if DI/DbContext files were modified
+5. Update session-resume recentFiles.modified list
 6. Update task-journal with completed task
 ```
 
 ### After modifying an existing file:
 ```
-1. If function was added/removed → update function-index line numbers
-2. If DI file was modified → update post-creation-verify insertion line numbers
+1. If function was added/removed → update Function Index entries
+2. If DI file was modified → update post-creation-verify registration points
 3. If route was added → update architecture-scanner apiRoutes
 ```
 
@@ -65,14 +68,14 @@ Any file deleted              → file-index (remove entry), function-index (rem
 ```
 1. Remove from file-index
 2. Remove from architecture-scanner apiRoutes (if controller/service)
-3. Remove function entries from function-index
+3. Remove function entries from the pattern cache Function Index
 ```
 
 ---
 
 ## Phase 3: Staleness Detection
 
-On session start, quick-check if caches are stale:
+When a refresh is requested (or the session-start hook has flagged old caches), check what is actually stale:
 
 ```
 1. Read each cache's "generated" date
@@ -118,8 +121,8 @@ After every file creation/modification by Claude:
   2. Updates them incrementally (add/remove entries)
   3. No full rescan needed for single-file changes
 
-On session start:
-  1. Staleness check (~1 grep command)
+When the session-start hook reports cache ages:
+  1. If a refresh is warranted, run the staleness check (~1 grep command)
   2. If stale → targeted refresh
   3. If fresh → use as-is
 ```
@@ -130,6 +133,6 @@ On session start:
 
 1. Do NOT rescan everything after a single file change — use incremental updates
 2. Do NOT skip cache updates after creating files — stale caches cause real bugs
-3. Do NOT run full refresh on every session start — only when stale
+3. Do NOT run a full refresh every time caches are mentioned — only when actually stale
 4. Do NOT update caches for non-source file changes (.md, .txt, config)
 5. Do NOT block the user's task to refresh — update in the background when possible

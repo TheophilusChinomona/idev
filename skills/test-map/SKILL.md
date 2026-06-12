@@ -1,6 +1,6 @@
 ---
 name: test-map
-description: Maps source files to their test files so only relevant tests run after a change. Use after modifying source files or when asked which tests cover a file.
+description: "Maps source files to their test files so only relevant tests run after a change. Use after modifying source files or when asked which tests cover a file."
 ---
 
 # Test Map Skill
@@ -168,6 +168,10 @@ Write to `.claude/idev/test-map/map.json`:
 }
 ```
 
+Notes on the format:
+- `testCount` and `untestedFiles` are OPTIONAL fields — they are expensive to compute and rot quickly. Omit them unless cheap to derive.
+- Jest's filter flag is version-dependent: older Jest uses `--testPathPattern`, newer Jest uses `--testPathPatterns`. If the filtered command fails, check `npx jest --help` and update the cached command.
+
 ---
 
 ## Phase 5: Usage
@@ -176,8 +180,9 @@ Write to `.claude/idev/test-map/map.json`:
 ```
 1. Load test-map
 2. Look up sourceToTests for the modified file
-3. If tests exist → run them with the filtered command
-4. Report: "3/3 tests passed" or "1 test failed: ..."
+3. Verify the mapped test file still exists before running it (if missing, update the map)
+4. If tests exist → run them with the filtered command
+5. Report: "3/3 tests passed" or "1 test failed: ..."
 ```
 
 ### After creating a new feature:

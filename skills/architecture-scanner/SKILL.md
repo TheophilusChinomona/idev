@@ -1,6 +1,6 @@
 ---
 name: architecture-scanner
-description: Detects which architectural layer (frontend or backend) a file or task belongs to and routes to the matching pattern skill. Use when a task spans frontend and backend, or when determining which layer a file belongs to.
+description: "Detects which architectural layer (frontend or backend) a file or task belongs to and routes to the matching pattern skill. Use when a task spans frontend and backend, or when determining which layer a file belongs to."
 ---
 
 # Architecture Scanner Skill
@@ -127,7 +127,7 @@ Write to `.claude/idev/architecture-scanner/cache.json`:
       "root": "relative/path/to/fe",
       "framework": "react|vue|angular|svelte|next|nuxt|flutter",
       "language": "typescript|javascript|dart",
-      "patternsSkill": "${CLAUDE_PLUGIN_ROOT}/skills/frontend-patterns/",
+      "patternsSkill": "frontend-patterns",
       "apiConfigFile": "relative/path/to/api/config",
       "serviceFilesPattern": "**/*.service.ts"
     },
@@ -135,7 +135,7 @@ Write to `.claude/idev/architecture-scanner/cache.json`:
       "root": "relative/path/to/be",
       "framework": ".net|express|fastapi|django|spring|rails|laravel|nestjs|go",
       "language": "csharp|typescript|python|java|go|ruby|php|rust",
-      "patternsSkill": "${CLAUDE_PLUGIN_ROOT}/skills/backend-patterns/",
+      "patternsSkill": "backend-patterns",
       "routesLocation": "relative/path/to/controllers-or-routes"
     }
   },

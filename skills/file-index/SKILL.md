@@ -1,6 +1,6 @@
 ---
 name: file-index
-description: Compact feature-to-file index mapping feature names to exact file paths. Use when the user mentions a feature and exact file paths are needed, or to refresh the index after files change.
+description: "Compact feature-to-file index mapping feature names to exact file paths. Use when the user mentions a feature and exact file paths are needed, or to refresh the index after files change."
 ---
 
 # File Index Skill
@@ -21,6 +21,8 @@ A compact index is maintained at:
 
 This file maps every feature to its exact FE and BE file paths (~100-150 lines).
 One read replaces 5-10 grep/glob operations.
+
+**Relationship to smart-context:** this index (`file-index/index.md`) is the lightweight path index — feature name → exact file paths, for fast lookup. smart-context's `index.json` is the feature/keyword index — detected stack, feature names, and naming patterns. They coexist and serve different lookups; neither replaces the other.
 
 ---
 

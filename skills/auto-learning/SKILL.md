@@ -1,23 +1,11 @@
 ---
 name: auto-learning
-description: Instinct-based learning system that observes sessions via hooks, creates atomic instincts with confidence scoring, and evolves them into skills/commands/agents.
-version: 2.0.0
+description: Instinct-based learning system that observes sessions via hooks and evolves patterns into skills/commands/agents. Use when the user asks about learned instincts, wants to analyze session patterns, sets up auto-learning or observation hooks, or runs /idev:instinct-status, /idev:instinct-export, /idev:instinct-import, or /idev:evolve.
 ---
 
 # Auto-Learning - Instinct-Based Architecture
 
-An advanced learning system that turns your Claude Code sessions into reusable knowledge through atomic "instincts" - small learned behaviors with confidence scoring.
-
-## What's New in v2
-
-| Feature | v1 | v2 |
-|---------|----|----|
-| Observation | Stop hook (session end) | PreToolUse/PostToolUse (100% reliable) |
-| Analysis | Main context | Background agent (Haiku) |
-| Granularity | Full skills | Atomic "instincts" |
-| Confidence | None | 0.3-0.9 weighted |
-| Evolution | Direct to skill | Instincts → cluster → skill/command/agent |
-| Sharing | None | Export/import instincts |
+A learning system that turns Claude Code sessions into reusable knowledge through atomic "instincts" - small learned behaviors with confidence scoring.
 
 ## The Instinct Model
 
@@ -53,46 +41,33 @@ Use functional patterns over classes when appropriate.
 ```
 Session Activity
       │
-      │ Hooks capture prompts + tool use (100% reliable)
+      │ PreToolUse/PostToolUse hooks (observe.sh → observe.py)
       ▼
 ┌─────────────────────────────────────────┐
 │         observations.jsonl              │
-│   (prompts, tool calls, outcomes)       │
+│   (tool calls + outcomes, redacted)     │
 └─────────────────────────────────────────┘
       │
-      │ Observer agent reads (background, Haiku)
-      ▼
-┌─────────────────────────────────────────┐
-│          PATTERN DETECTION              │
-│   • User corrections → instinct         │
-│   • Error resolutions → instinct        │
-│   • Repeated workflows → instinct       │
-└─────────────────────────────────────────┘
-      │
-      │ Creates/updates
+      │ Observer loop (start-observer.sh, headless Haiku)
       ▼
 ┌─────────────────────────────────────────┐
 │         instincts/personal/             │
-│   • prefer-functional.md (0.7)          │
-│   • always-test-first.md (0.9)          │
-│   • use-zod-validation.md (0.6)         │
+│   atomic instincts with confidence      │
 └─────────────────────────────────────────┘
       │
-      │ /evolve clusters
+      │ /idev:evolve clusters
       ▼
 ┌─────────────────────────────────────────┐
 │              evolved/                   │
-│   • commands/new-feature.md             │
-│   • skills/testing-workflow.md          │
-│   • agents/refactor-specialist.md       │
+│   skills / commands / agents            │
 └─────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
-### 1. Enable Observation Hooks
+### 1. Enable Observation Hooks (opt-in)
 
-Add to your `~/.claude/settings.json`:
+Add to your `~/.claude/settings.json`. NOTE: `${CLAUDE_PLUGIN_ROOT}` is NOT expanded in user settings — replace `<idev-plugin-root>` below with the absolute path of the installed idev plugin (find it with `claude plugin list` or under `~/.claude/plugins/`):
 
 ```json
 {
@@ -101,19 +76,21 @@ Add to your `~/.claude/settings.json`:
       "matcher": "*",
       "hooks": [{
         "type": "command",
-        "command": "${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/hooks/observe.sh pre"
+        "command": "<idev-plugin-root>/skills/auto-learning/hooks/observe.sh pre"
       }]
     }],
     "PostToolUse": [{
       "matcher": "*",
       "hooks": [{
         "type": "command",
-        "command": "${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/hooks/observe.sh post"
+        "command": "<idev-plugin-root>/skills/auto-learning/hooks/observe.sh post"
       }]
     }]
   }
 }
 ```
+
+`observe.sh` is a thin wrapper that pipes the hook JSON to `observe.py` (the canonical implementation). The `pre`/`post` argument tells it the hook phase; if omitted, it falls back to the `hook_event_name` field in the payload. The hook truncates inputs/outputs at 5000 chars, redacts secret-looking values, honors `capture_tools`/`ignore_tools` from `config.json`, and rotates `observations.jsonl` into `observations.archive/` past `max_file_size_mb`.
 
 ### 2. Initialize Directory Structure
 
@@ -124,25 +101,34 @@ touch ~/.claude/homunculus/observations.jsonl
 
 ### 3. Run the Observer Agent (Optional)
 
-The observer can run in the background analyzing observations:
+The observer runs in the background, analyzing observations every 5 minutes (and on SIGUSR1 from the hook). It only archives observations after a successful analysis that produced an instinct:
 
 ```bash
-# Start background observer
-${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/agents/start-observer.sh
+"${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/agents/start-observer.sh"          # start
+"${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/agents/start-observer.sh" status   # check
+"${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/agents/start-observer.sh" stop     # stop
 ```
 
-## Commands
+## CLI and Commands
 
-| Command | Description |
-|---------|-------------|
-| `/instinct-status` | Show all learned instincts with confidence |
-| `/evolve` | Cluster related instincts into skills/commands |
-| `/instinct-export` | Export instincts for sharing |
-| `/instinct-import <file>` | Import instincts from others |
+`scripts/instinct-cli.py` manages the instinct store. Four plugin commands wrap it:
+
+| Command | CLI invocation | Description |
+|---------|----------------|-------------|
+| `/idev:instinct-status` | `instinct-cli.py status` | Show all instincts with confidence, by domain |
+| `/idev:instinct-export` | `instinct-cli.py export [--domain] [--min-confidence] [--output]` | Export sanitized instincts for sharing |
+| `/idev:instinct-import` | `instinct-cli.py import <file-or-url> [--dry-run] [--force] [--min-confidence]` | Import instincts; updates existing ids in place |
+| `/idev:evolve` | `instinct-cli.py evolve [--generate]` | Print instinct clusters; Claude writes the evolved files |
+
+Run it directly with:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py" status
+```
 
 ## Configuration
 
-Edit `config.json`:
+`config.json` (in this skill's directory) is the source of truth:
 
 ```json
 {
@@ -151,60 +137,74 @@ Edit `config.json`:
     "enabled": true,
     "store_path": "~/.claude/homunculus/observations.jsonl",
     "max_file_size_mb": 10,
-    "archive_after_days": 7
+    "archive_after_days": 7,
+    "capture_tools": ["Edit", "Write", "Bash", "Read", "Grep", "Glob"],
+    "ignore_tools": ["TodoWrite"]
   },
   "instincts": {
     "personal_path": "~/.claude/homunculus/instincts/personal/",
     "inherited_path": "~/.claude/homunculus/instincts/inherited/",
     "min_confidence": 0.3,
     "auto_approve_threshold": 0.7,
-    "confidence_decay_rate": 0.05
+    "confidence_decay_rate": 0.02,
+    "max_instincts": 100
   },
   "observer": {
-    "enabled": true,
+    "enabled": false,
     "model": "haiku",
     "run_interval_minutes": 5,
+    "min_observations_to_analyze": 20,
     "patterns_to_detect": [
       "user_corrections",
       "error_resolutions",
       "repeated_workflows",
-      "tool_preferences"
+      "tool_preferences",
+      "file_patterns"
     ]
   },
   "evolution": {
     "cluster_threshold": 3,
-    "evolved_path": "~/.claude/homunculus/evolved/"
+    "evolved_path": "~/.claude/homunculus/evolved/",
+    "auto_evolve": false
   }
 }
 ```
+
+Field reference:
+
+- `observation.enabled` — master switch for the observation hook (`false` disables capture)
+- `observation.capture_tools` — if non-empty, ONLY these tools are observed
+- `observation.ignore_tools` — tools never observed (checked before capture_tools)
+- `observation.max_file_size_mb` — observations.jsonl rotates to the archive past this size
+- `observation.archive_after_days` — retention hint for archived observations
+- `instincts.min_confidence` — floor for keeping an instinct
+- `instincts.auto_approve_threshold` — confidence at which an instinct applies without asking
+- `instincts.confidence_decay_rate` — weekly decay when a pattern stops being observed
+- `instincts.max_instincts` — cap on the instinct store; prune lowest-confidence first
+- `observer.enabled` — whether the background observer should run
+- `observer.min_observations_to_analyze` — observations required before an analysis run (read by start-observer.sh)
+- `evolution.cluster_threshold` — instincts required to form an evolution cluster
+- `evolution.auto_evolve` — if true, evolution may be proposed without an explicit /idev:evolve
+
+You can also disable capture entirely by creating `~/.claude/homunculus/disabled`.
 
 ## File Structure
 
 ```
 ~/.claude/homunculus/
-├── identity.json           # Your profile, technical level
 ├── observations.jsonl      # Current session observations
-├── observations.archive/   # Processed observations
+├── observations.archive/   # Rotated + processed observations
+├── observer.log            # Background observer log
 ├── instincts/
 │   ├── personal/           # Auto-learned instincts
 │   └── inherited/          # Imported from others
 └── evolved/
-    ├── agents/             # Generated specialist agents
-    ├── skills/             # Generated skills
-    └── commands/           # Generated commands
+    ├── agents/             # Evolved specialist agents
+    ├── skills/             # Evolved skills
+    └── commands/           # Evolved commands
 ```
 
-## Integration with Skill Creator
-
-When you use the [Skill Creator GitHub App](https://skill-creator.app), it now generates **both**:
-- Traditional SKILL.md files (for backward compatibility)
-- Instinct collections (for v2 learning system)
-
-Instincts from repo analysis have `source: "repo-analysis"` and include the source repository URL.
-
 ## Confidence Scoring
-
-Confidence evolves over time:
 
 | Score | Meaning | Behavior |
 |-------|---------|----------|
@@ -213,45 +213,17 @@ Confidence evolves over time:
 | 0.7 | Strong | Auto-approved for application |
 | 0.9 | Near-certain | Core behavior |
 
-**Confidence increases** when:
-- Pattern is repeatedly observed
-- User doesn't correct the suggested behavior
-- Similar instincts from other sources agree
+**Confidence increases** when a pattern is repeatedly observed, the user doesn't correct the behavior, or similar instincts from other sources agree.
 
-**Confidence decreases** when:
-- User explicitly corrects the behavior
-- Pattern isn't observed for extended periods
-- Contradicting evidence appears
-
-## Why Hooks vs Skills for Observation?
-
-> "v1 relied on skills to observe. Skills are probabilistic—they fire ~50-80% of the time based on Claude's judgment."
-
-Hooks fire **100% of the time**, deterministically. This means:
-- Every tool call is observed
-- No patterns are missed
-- Learning is comprehensive
-
-## Backward Compatibility
-
-v2 is fully compatible with v1:
-- Existing `~/.claude/idev/learned/` skills still work
-- Stop hook still runs (but now also feeds into v2)
-- Gradual migration path: run both in parallel
+**Confidence decreases** when the user explicitly corrects the behavior, the pattern isn't observed for extended periods (see `confidence_decay_rate`), or contradicting evidence appears.
 
 ## Privacy
 
 - Observations stay **local** on your machine
-- Only **instincts** (patterns) can be exported
-- No actual code or conversation content is shared
+- The hook redacts secret-looking values (api keys, tokens, passwords) before writing
+- Export sanitizes absolute file paths and secrets; only instinct patterns are shared
 - You control what gets exported
-
-## Related
-
-- [Skill Creator](https://skill-creator.app) - Generate instincts from repo history
-- [Homunculus](https://github.com/humanplane/homunculus) - Inspiration for v2 architecture
-- [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Continuous learning section
 
 ---
 
-*Instinct-based learning: teaching Claude your patterns, one observation at a time.*
+*Architecture inspired by the Homunculus continuous-learning project.*

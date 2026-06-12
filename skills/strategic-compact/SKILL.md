@@ -1,12 +1,6 @@
 ---
 name: strategic-compact
-description: Suggests manual context compaction at logical intervals to preserve context through task phases rather than arbitrary auto-compaction.
-priority: low
-auto_trigger: false
-user_invocable: false
-platform: all
-integrates_with:
-  - smart-context
+description: "Suggests manual /compact at logical task boundaries (after exploration, planning, milestones) instead of arbitrary auto-compaction. Use when the user wants automatic /compact reminders, asks about managing context size, or when deciding whether to suggest compaction at a phase boundary."
 ---
 
 # Strategic Compact Skill
@@ -25,84 +19,68 @@ Strategic compaction at logical boundaries:
 - **After completing a milestone** - Fresh start for next phase
 - **Before major context shifts** - Clear exploration context before different task
 
-## How It Works
+## What Claude should do when this skill loads
 
-The script runs on PreToolUse (Edit/Write) and:
+1. At phase boundaries (plan finalized, milestone complete, bug fixed, long exploration finished), suggest the user run `/compact` — briefly, with the reason.
+2. When the PostToolUse hook below injects a `[strategic-compact]` reminder, treat it as a prompt to evaluate whether the current moment is a logical boundary; only suggest `/compact` if it is. Never suggest it mid-implementation.
+3. Remind the user that durable state survives compaction: `.claude/idev/smart-context/index.json`, `.claude/idev/project-map/project.map.md`, and the other `.claude/idev/` caches.
 
-1. **Tracks tool calls** - Counts tool invocations in session
-2. **Threshold detection** - Suggests at configurable threshold (default: 50 calls)
-3. **Periodic reminders** - Reminds every 25 calls after threshold
+## How the hook works
+
+`suggest-compact.sh` (Unix) / `suggest-compact.ps1` (Windows) run on **PostToolUse** with matcher `Edit|Write`:
+
+1. Read the hook JSON from stdin and extract `session_id`
+2. Increment a per-session counter file in the temp directory
+3. Every N calls (default 50), emit `hookSpecificOutput` JSON on stdout, which Claude Code injects as additional context for Claude
 
 ## Hook Setup
 
+Add to your `~/.claude/settings.json`. NOTE: `${CLAUDE_PLUGIN_ROOT}` is NOT expanded in user settings — replace `<idev-plugin-root>` below with the absolute path of the installed idev plugin (find it with `claude plugin list` or under `~/.claude/plugins/`):
+
+### Unix/macOS
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "hooks": [{
+        "type": "command",
+        "command": "bash \"<idev-plugin-root>/skills/strategic-compact/suggest-compact.sh\""
+      }]
+    }]
+  }
+}
+```
+
 ### Windows (PowerShell)
 
-Add to your `%USERPROFILE%\.claude\settings.json`:
-
 ```json
 {
   "hooks": {
-    "PreToolUse": [{
-      "matcher": "tool == \"Edit\" || tool == \"Write\"",
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
       "hooks": [{
         "type": "command",
-        "command": "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.claude\\skills\\strategic-compact\\suggest-compact.ps1\""
+        "command": "powershell -ExecutionPolicy Bypass -File \"<idev-plugin-root>\\skills\\strategic-compact\\suggest-compact.ps1\""
       }]
     }]
   }
 }
 ```
 
-### Unix/macOS (Bash)
-
-Add to your `~/.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [{
-      "matcher": "tool == \"Edit\" || tool == \"Write\"",
-      "hooks": [{
-        "type": "command",
-        "command": "${CLAUDE_PLUGIN_ROOT}/skills/strategic-compact/suggest-compact.sh"
-      }]
-    }]
-  }
-}
-```
+The matcher is a regex over tool names (`Edit|Write`) — not an expression language.
 
 ## Configuration
 
-Environment variables:
-- `COMPACT_THRESHOLD` - Tool calls before first suggestion (default: 50)
-- `COMPACT_REMINDER_INTERVAL` - Calls between reminders after threshold (default: 25)
+- `IDEV_COMPACT_THRESHOLD` - Edit/Write calls between suggestions (default: 50)
 
 ## Best Practices
 
 1. **Compact after planning** - Once plan is finalized, compact to start fresh
 2. **Compact after debugging** - Clear error-resolution context before continuing
 3. **Don't compact mid-implementation** - Preserve context for related changes
-4. **Read the suggestion** - The hook tells you *when*, you decide *if*
-
-## Integration with smart-context
-
-This skill integrates with smart-context to provide context-aware suggestions:
-
-```
-When suggesting compact:
-1. Check index.json for current session context
-2. Note which features have been explored
-3. Include in suggestion: "Context explored: [features]"
-```
-
-### Compact Preserves
-
-After `/compact`, the following persists:
-- `.claude/idev/smart-context/index.json` - Feature index
-- `.claude/idev/api-contracts/*` - API documentation
-- `.claude/idev/project-map/project.map.md` - Project structure
-
-### Best Compact Points
+4. **The hook tells you *when*, you decide *if***
 
 | Phase | Compact After | Why |
 |-------|---------------|-----|
@@ -113,6 +91,5 @@ After `/compact`, the following persists:
 
 ## Related
 
-- [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Token optimization section
-- Memory persistence hooks - For state that survives compaction
 - smart-context skill - For context that persists across compaction
+- project-map skill - The map survives compaction at `.claude/idev/project-map/project.map.md`

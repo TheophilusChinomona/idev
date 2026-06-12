@@ -1,6 +1,6 @@
 import os
 import re
-import glob as globmod
+import sys
 from datetime import datetime
 
 # -----------------------------
@@ -19,6 +19,12 @@ IGNORE_FILE_PATTERNS = (
 )
 
 ALLOW_JSON_FILES = ('tsconfig.json', 'package.json', 'appsettings.json')
+
+# Generic source extensions scanned in split mode (FE and BE trees)
+GENERIC_SOURCE_EXTENSIONS = (
+    '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rb', '.java',
+    '.cs', '.php', '.vue', '.svelte', '.json'
+)
 
 # Blazor/Razor file extensions (UI layer in a unified project)
 UNIFIED_UI_EXTENSIONS = ('.razor', '.razor.cs', '.cshtml', '.cshtml.cs')
@@ -69,8 +75,9 @@ def discover_referenced_projects(csproj_path):
     if not os.path.exists(csproj_path):
         return []
 
-    project_dir = os.path.dirname(os.path.abspath(csproj_path))
     referenced_dirs = []
+    # Seed with the starting project's own dir so circular refs never re-add it
+    added_dirs = {os.path.dirname(os.path.abspath(csproj_path))}
     visited = set()
 
     def _follow_refs(csproj):
@@ -98,7 +105,8 @@ def discover_referenced_projects(csproj_path):
             ref_abs = os.path.normpath(os.path.join(parent_dir, ref_normalized))
             ref_dir = os.path.dirname(ref_abs)
 
-            if os.path.isdir(ref_dir) and ref_dir not in [os.path.dirname(c) for c in visited]:
+            if os.path.isdir(ref_dir) and ref_dir not in added_dirs:
+                added_dirs.add(ref_dir)
                 referenced_dirs.append(ref_dir)
                 # Recursively follow that project's references too
                 _follow_refs(ref_abs)
@@ -169,7 +177,7 @@ def categorize_unified_files(root_path):
 
     # 1. Scan the main project directory
     main_files = scan_directory(root_path,
-        allowed_extensions=('.cs', '.razor', '.razor.cs', '.cshtml', '.cshtml.cs', '.json'))
+        allowed_extensions=UNIFIED_UI_EXTENSIONS + GENERIC_SOURCE_EXTENSIONS)
     main_cats = categorize_files(main_files)
     merge_categories(all_categories, main_cats)
 
@@ -230,6 +238,17 @@ def detect_project_type(config):
     return "none"
 
 
+def autodetect_split_dirs(root):
+    """Look for conventional FE/BE subdirectories under root."""
+    fe_names = ('frontend', 'client', 'web', 'ui')
+    be_names = ('backend', 'server', 'api')
+    fe = next((os.path.join(root, n) for n in fe_names
+               if os.path.isdir(os.path.join(root, n))), None)
+    be = next((os.path.join(root, n) for n in be_names
+               if os.path.isdir(os.path.join(root, n))), None)
+    return fe, be
+
+
 def create_project_map(fe_path=None, be_path=None, unified_path=None,
                        project_type=None, output_path=None, config=None):
     """
@@ -247,24 +266,35 @@ def create_project_map(fe_path=None, be_path=None, unified_path=None,
         project_type = project_type or detect_project_type(config)
 
     if not config and not fe_path and not be_path and not unified_path:
-        print("Select project type:")
-        print("  1. Split (separate FE + BE projects, e.g. React + .NET API)")
-        print("  2. Unified (single project, e.g. Blazor Server, MVC)")
-        choice = input("Enter 1 or 2: ").strip()
-
-        if choice == "2":
-            project_type = "unified"
-            unified_path = input("Enter project root path: ").strip()
-            if unified_path == "":
-                unified_path = None
+        if not sys.stdin.isatty():
+            # Non-interactive: never prompt — fall back to sane defaults.
+            if project_type == "split":
+                fe_path, be_path = autodetect_split_dirs(os.getcwd())
+                if not fe_path and not be_path:
+                    project_type = "unified"
+                    unified_path = os.getcwd()
+            else:
+                project_type = project_type or "unified"
+                unified_path = os.getcwd()
         else:
-            project_type = "split"
-            fe_path = input("Enter Frontend root path (or leave blank if none): ").strip()
-            if fe_path == "":
-                fe_path = None
-            be_path = input("Enter Backend root path (or leave blank if none): ").strip()
-            if be_path == "":
-                be_path = None
+            print("Select project type:")
+            print("  1. Split (separate FE + BE projects, e.g. React + .NET API)")
+            print("  2. Unified (single project, e.g. Blazor Server, MVC)")
+            choice = input("Enter 1 or 2: ").strip()
+
+            if choice == "2":
+                project_type = "unified"
+                unified_path = input("Enter project root path: ").strip()
+                if unified_path == "":
+                    unified_path = None
+            else:
+                project_type = "split"
+                fe_path = input("Enter Frontend root path (or leave blank if none): ").strip()
+                if fe_path == "":
+                    fe_path = None
+                be_path = input("Enter Backend root path (or leave blank if none): ").strip()
+                if be_path == "":
+                    be_path = None
 
     if output_path is None:
         output_path = os.path.join('.claude', 'idev', 'project-map', 'project.map.md')
@@ -343,7 +373,7 @@ def create_project_map(fe_path=None, be_path=None, unified_path=None,
         # -----------------------------
         if fe_path:
             map_lines.append("FRONTEND FILES:")
-            fe_files = scan_directory(fe_path, allowed_extensions=('.ts', '.tsx', '.json'))
+            fe_files = scan_directory(fe_path, allowed_extensions=GENERIC_SOURCE_EXTENSIONS)
             if fe_files:
                 for f in fe_files:
                     map_lines.append(f"- {f}")
@@ -356,7 +386,7 @@ def create_project_map(fe_path=None, be_path=None, unified_path=None,
         # -----------------------------
         if be_path:
             map_lines.append("BACKEND FILES:")
-            be_files = scan_directory(be_path, allowed_extensions=('.cs', '.json'))
+            be_files = scan_directory(be_path, allowed_extensions=GENERIC_SOURCE_EXTENSIONS)
             if be_files:
                 for f in be_files:
                     map_lines.append(f"- {f}")
@@ -374,3 +404,50 @@ def create_project_map(fe_path=None, be_path=None, unified_path=None,
         f.write("\n".join(map_lines))
 
     print(f"Project map created/updated at {output_path}.")
+
+
+def _main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Generate a project map at .claude/idev/project-map/project.map.md")
+    parser.add_argument("--root", default=os.getcwd(),
+                        help="Project root (default: current directory)")
+    parser.add_argument("--mode", choices=["single", "unified", "split"], default=None,
+                        help="Map mode ('single'/'unified' = one tree; default: auto-detect)")
+    parser.add_argument("--frontend", default=None,
+                        help="Frontend root (split mode)")
+    parser.add_argument("--backend", default=None,
+                        help="Backend root (split mode)")
+    parser.add_argument("--output", default=None,
+                        help="Output path (default: <root>/.claude/idev/project-map/project.map.md)")
+    args = parser.parse_args()
+
+    root = os.path.abspath(args.root)
+    mode = "unified" if args.mode == "single" else args.mode
+    fe, be = args.frontend, args.backend
+
+    if mode is None:
+        if fe or be:
+            mode = "split"
+        else:
+            fe, be = autodetect_split_dirs(root)
+            mode = "split" if (fe and be) else "unified"
+    elif mode == "split" and not fe and not be:
+        fe, be = autodetect_split_dirs(root)
+        if not fe and not be:
+            print("No frontend/backend dirs found; falling back to unified scan of root.")
+            mode = "unified"
+
+    output = args.output or os.path.join(root, ".claude", "idev", "project-map",
+                                         "project.map.md")
+    os.makedirs(os.path.dirname(output) or ".", exist_ok=True)
+
+    if mode == "unified":
+        create_project_map(unified_path=root, project_type="unified", output_path=output)
+    else:
+        create_project_map(fe_path=fe, be_path=be, project_type="split", output_path=output)
+
+
+if __name__ == "__main__":
+    _main()

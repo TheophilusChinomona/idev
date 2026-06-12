@@ -4,7 +4,8 @@ Smart Context Scanner
 Automatically detects project structure and creates a lightweight index.
 Run this once when setting up, or let Claude run it dynamically.
 
-Usage: python scanner.py [project_root]
+Usage: python3 scanner.py [project_root]
+Writes <project_root>/.claude/idev/smart-context/index.json
 """
 
 import os
@@ -12,7 +13,14 @@ import json
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional
+
+# Directories pruned during traversal (never descended into)
+IGNORED_DIRS = {
+    "node_modules", ".git", "bin", "obj", "dist", "build",
+    ".next", "venv", ".venv", "__pycache__", "coverage",
+}
+
 
 class ProjectScanner:
     def __init__(self, root_path: str = "."):
@@ -25,10 +33,26 @@ class ProjectScanner:
             "features": [],
             "patterns": {}
         }
+        self._files = []
+        self._dirs = []
+
+    def _walk(self):
+        """Single os.walk pass, pruning ignored dirs; caches files and dirs."""
+        files, dirs = [], []
+        for dirpath, dirnames, filenames in os.walk(self.root):
+            dirnames[:] = [d for d in dirnames if d not in IGNORED_DIRS]
+            base = Path(dirpath)
+            for d in dirnames:
+                dirs.append(base / d)
+            for f in filenames:
+                files.append(base / f)
+        self._files = files
+        self._dirs = dirs
 
     def scan(self) -> Dict:
         """Run full project scan."""
         print(f"Scanning: {self.root}")
+        self._walk()
         self._detect_stack()
         self._detect_structure()
         self._detect_features()
@@ -39,88 +63,111 @@ class ProjectScanner:
         """Detect technology stack."""
         stack = {"frontend": None, "backend": None}
 
-        # Frontend detection - search in root and subdirectories (for monorepos)
-        package_files = list(self.root.rglob("package.json"))
+        # Frontend detection — deterministic: sort candidates by path depth,
+        # prefer the shallowest package.json (root before monorepo subpackages)
+        package_files = sorted(
+            (p for p in self._files if p.name == "package.json"),
+            key=lambda p: (len(p.relative_to(self.root).parts), str(p)),
+        )
         for pkg_path in package_files:
-            if "node_modules" in str(pkg_path):
-                continue
             try:
                 with open(pkg_path) as f:
                     pkg = json.load(f)
-                    deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
-                    if "react" in deps:
-                        stack["frontend"] = "react"
-                        self.index["structure"]["frontend_root"] = str(pkg_path.parent.relative_to(self.root))
-                        break
-                    elif "vue" in deps:
-                        stack["frontend"] = "vue"
-                        self.index["structure"]["frontend_root"] = str(pkg_path.parent.relative_to(self.root))
-                        break
-                    elif "@angular/core" in deps:
-                        stack["frontend"] = "angular"
-                        self.index["structure"]["frontend_root"] = str(pkg_path.parent.relative_to(self.root))
-                        break
-                    elif "next" in deps:
-                        stack["frontend"] = "nextjs"
-                        self.index["structure"]["frontend_root"] = str(pkg_path.parent.relative_to(self.root))
-                        break
-            except:
-                pass
+                deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
+            except Exception:
+                continue
+            # Check next BEFORE react: Next.js apps also depend on react
+            if "next" in deps:
+                stack["frontend"] = "nextjs"
+            elif "react" in deps:
+                stack["frontend"] = "react"
+            elif "vue" in deps:
+                stack["frontend"] = "vue"
+            elif "@angular/core" in deps:
+                stack["frontend"] = "angular"
+            else:
+                continue
+            self.index["structure"]["frontend_root"] = str(
+                pkg_path.parent.relative_to(self.root))
+            break
 
         # Backend detection
-        csproj_files = list(self.root.rglob("*.csproj"))
+        csproj_files = sorted(p for p in self._files if p.suffix == ".csproj")
         if csproj_files:
             stack["backend"] = "dotnet"
             # Find the main API project
             for f in csproj_files:
                 if "Api" in f.stem or "Web" in f.stem:
-                    self.index["structure"]["backend_root"] = str(f.parent.relative_to(self.root))
+                    self.index["structure"]["backend_root"] = str(
+                        f.parent.relative_to(self.root))
                     break
-        elif (self.root / "requirements.txt").exists() or (self.root / "pyproject.toml").exists():
-            stack["backend"] = "python"
-        elif (self.root / "go.mod").exists():
-            stack["backend"] = "go"
-        elif (self.root / "Cargo.toml").exists():
-            stack["backend"] = "rust"
-        elif (self.root / "pom.xml").exists() or (self.root / "build.gradle").exists():
-            stack["backend"] = "java"
+        else:
+            # Check the root AND one level of subdirectories (backend/, server/,
+            # api/, ...) for backend markers
+            markers = [
+                (("requirements.txt", "pyproject.toml"), "python"),
+                (("go.mod",), "go"),
+                (("Cargo.toml",), "rust"),
+                (("pom.xml", "build.gradle"), "java"),
+            ]
+            candidates = [self.root] + sorted(
+                p for p in self.root.iterdir()
+                if p.is_dir() and p.name not in IGNORED_DIRS
+                and not p.name.startswith(".")
+            )
+            for d in candidates:
+                for names, lang in markers:
+                    if any((d / n).exists() for n in names):
+                        stack["backend"] = lang
+                        if d != self.root:
+                            self.index["structure"]["backend_root"] = str(
+                                d.relative_to(self.root))
+                        break
+                if stack["backend"]:
+                    break
 
         self.index["stack"] = {k: v for k, v in stack.items() if v}
 
     def _detect_structure(self):
         """Detect project directory structure."""
-        structure = {}
+        structure = self.index["structure"]
 
-        # Common source directories
-        src_patterns = ["src", "app", "lib", "packages", "source"]
-        for pattern in src_patterns:
-            for path in self.root.glob(f"*/{pattern}"):
-                if path.is_dir():
-                    rel_path = str(path.relative_to(self.root))
-                    if "frontend" in rel_path.lower() or "react" in rel_path.lower() or "web" in rel_path.lower():
-                        structure["frontend_src"] = rel_path
-                    elif "backend" in rel_path.lower() or "api" in rel_path.lower() or "server" in rel_path.lower():
-                        structure["backend_src"] = rel_path
+        # Common source directories one level down (e.g. frontend/src)
+        src_patterns = {"src", "app", "lib", "packages", "source"}
+        for path in self._dirs:
+            rel = path.relative_to(self.root)
+            if len(rel.parts) != 2 or rel.parts[1] not in src_patterns:
+                continue
+            rel_path = str(rel)
+            lower = rel_path.lower()
+            if any(k in lower for k in ("frontend", "react", "web")):
+                structure.setdefault("frontend_src", rel_path)
+            elif any(k in lower for k in ("backend", "api", "server")):
+                structure.setdefault("backend_src", rel_path)
 
         # Direct src folder
         if (self.root / "src").is_dir():
             structure["src"] = "src"
 
         # Look for src-prefixed backend roots (e.g., src-api, src-server)
-        for path in self.root.glob("src-*"):
+        for path in sorted(self.root.glob("src-*")):
             if path.is_dir() and "backend_src" not in structure:
                 structure["backend_src"] = path.name
 
-        # Find controllers/services directories
-        for path in self.root.rglob("Controllers"):
-            if path.is_dir() and "bin" not in str(path) and "obj" not in str(path):
-                structure["controllers"] = str(path.relative_to(self.root))
-                break
+        # Find controllers/services directories (shallowest first)
+        def shallowest(name: str) -> Optional[Path]:
+            matches = sorted(
+                (p for p in self._dirs if p.name == name),
+                key=lambda p: (len(p.parts), str(p)),
+            )
+            return matches[0] if matches else None
 
-        for path in self.root.rglob("Services"):
-            if path.is_dir() and "bin" not in str(path) and "obj" not in str(path) and "node_modules" not in str(path):
-                structure["services"] = str(path.relative_to(self.root))
-                break
+        controllers = shallowest("Controllers")
+        if controllers:
+            structure["controllers"] = str(controllers.relative_to(self.root))
+        services = shallowest("Services")
+        if services:
+            structure["services"] = str(services.relative_to(self.root))
 
         self.index["structure"] = structure
 
@@ -129,50 +176,61 @@ class ProjectScanner:
         features = set()
 
         # Look for features/modules directories
-        feature_dirs = ["features", "modules", "domains", "areas"]
-        for dir_name in feature_dirs:
-            for path in self.root.rglob(dir_name):
-                if path.is_dir() and "node_modules" not in str(path) and "bin" not in str(path):
-                    for child in path.iterdir():
-                        if child.is_dir() and not child.name.startswith("."):
-                            features.add(child.name)
+        feature_dirs = {"features", "modules", "domains", "areas"}
+        for path in self._dirs:
+            if path.name not in feature_dirs:
+                continue
+            try:
+                for child in path.iterdir():
+                    if child.is_dir() and not child.name.startswith("."):
+                        features.add(child.name)
+            except OSError:
+                continue
 
         # Look for controller names (FeatureController.cs)
-        for path in self.root.rglob("*Controller.cs"):
-            if "bin" not in str(path) and "obj" not in str(path):
+        for path in self._files:
+            if path.name.endswith("Controller.cs"):
                 name = path.stem.replace("Controller", "")
                 if name and len(name) > 2:
                     features.add(name)
 
         # Clean up feature names
-        self.index["features"] = sorted([f for f in features if len(f) > 2 and f[0].isupper()])[:50]
+        self.index["features"] = sorted(
+            f for f in features if len(f) > 2 and f[0].isupper())[:50]
 
     def _detect_patterns(self):
         """Detect common file patterns in the project."""
-        patterns = {}
-
-        # Count file patterns
+        exts = {".tsx", ".ts", ".cs", ".py", ".go", ".java", ".vue", ".svelte"}
         pattern_counts = {}
-        for ext in [".tsx", ".ts", ".cs", ".py", ".go", ".java", ".vue", ".svelte"]:
-            for path in self.root.rglob(f"*{ext}"):
-                if "node_modules" not in str(path) and "bin" not in str(path) and "obj" not in str(path):
-                    name = path.stem
-                    # Detect naming patterns
-                    if name.endswith("Container"):
-                        pattern_counts["container"] = pattern_counts.get("container", 0) + 1
-                    elif name.endswith("Page"):
-                        pattern_counts["page"] = pattern_counts.get("page", 0) + 1
-                    elif name.endswith("Controller"):
-                        pattern_counts["controller"] = pattern_counts.get("controller", 0) + 1
-                    elif name.endswith("Service"):
-                        pattern_counts["service"] = pattern_counts.get("service", 0) + 1
-                    elif name.endswith(".hook") or name.endswith(".hooks"):
-                        pattern_counts["hook"] = pattern_counts.get("hook", 0) + 1
+        for path in self._files:
+            if path.suffix not in exts:
+                continue
+            name = path.stem
+            if name.endswith("Container"):
+                pattern_counts["container"] = pattern_counts.get("container", 0) + 1
+            elif name.endswith("Page"):
+                pattern_counts["page"] = pattern_counts.get("page", 0) + 1
+            elif name.endswith("Controller"):
+                pattern_counts["controller"] = pattern_counts.get("controller", 0) + 1
+            elif name.endswith("Service"):
+                pattern_counts["service"] = pattern_counts.get("service", 0) + 1
+            elif name.endswith(".hook") or name.endswith(".hooks"):
+                pattern_counts["hook"] = pattern_counts.get("hook", 0) + 1
+
+        # Globs matching the conventions actually counted above
+        pattern_globs = {
+            "container": "*Container.*",
+            "page": "*Page.*",
+            "controller": "*Controller.*",
+            "service": "*Service.*",
+            "hook": "*.hook.*",
+        }
 
         # Set patterns that appear frequently
+        patterns = {}
         for pattern, count in pattern_counts.items():
             if count >= 3:
-                patterns[pattern] = f"*{pattern.capitalize()}.*"
+                patterns[pattern] = pattern_globs[pattern]
 
         self.index["patterns"] = patterns
 

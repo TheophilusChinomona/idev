@@ -1,6 +1,6 @@
 ---
 name: import-graph
-description: Lightweight dependency graph of which files import which. Use before modifying a shared type, interface, service, or export to find dependent files that might break.
+description: "Lightweight dependency graph of which files import which, for path-based-import languages (TS/JS, Python, Go). Use before modifying a shared type, interface, service, or export to find dependent files that might break."
 ---
 
 # Import Graph Skill
@@ -25,9 +25,9 @@ Focus on shared/core files that are imported by many others.
 
 ---
 
-## Phase 1: Detect Import Syntax
+## Scope: Path-Based-Import Languages Only
 
-Auto-detect how imports work based on the project's language:
+This skill applies to languages whose imports reference file paths, so an import line maps directly to a file:
 
 ```
 TypeScript/JavaScript:
@@ -35,16 +35,9 @@ TypeScript/JavaScript:
   import X from "./path"
   require("./path")
 
-C#:
-  using Namespace.SubNamespace;
-  (also: project references in .csproj)
-
 Python:
   from module import X
   import module
-
-Java:
-  import package.Class;
 
 Go:
   import "package/path"
@@ -54,6 +47,8 @@ Ruby:
   require_relative "path"
 ```
 
+Do NOT build an import graph for C# or Java: `using Namespace;` / `import package.Class;` reference namespaces, not files, so they don't map to a file graph. For those languages, grep for the type name directly (e.g., `Grep "OrderService"`) to find dependents.
+
 ---
 
 ## Phase 2: Build the Graph
@@ -61,10 +56,10 @@ Ruby:
 ### What to track (high-value files only):
 ```
 DO track reverse dependencies for:
-  - Type/interface definition files (*.types.ts, *.interfaces.ts, I*Service.cs)
-  - Service files (*.service.ts, *Service.cs)
+  - Type/interface definition files (*.types.ts, *.interfaces.ts)
+  - Service files (*.service.ts)
   - Hook files (*.hook.ts)
-  - Model/entity files (*.models.ts, Entity.cs)
+  - Model/entity files (*.models.ts)
   - Shared utility files (helpers, constants, enums)
   - Core/shared components
 
@@ -120,14 +115,18 @@ Write to `.claude/idev/import-graph/graph.json`:
 
 ## Phase 4: Usage
 
+### Staleness rule
+Before acting on a graph hit, confirm it with a live Grep (e.g., grep for the import path or exported name). If the live result disagrees with the graph, regenerate the graph before proceeding.
+
 ### When modifying a type/interface:
 ```
 Before changing Order type:
   1. Load graph.json
   2. Look up "order.types.ts"
   3. See 3 files depend on it
-  4. Check each dependent file for breaking changes
-  5. Update dependents if needed
+  4. Confirm with a live Grep that those files still import it
+  5. Check each dependent file for breaking changes
+  6. Update dependents if needed
 ```
 
 ### When renaming an export:

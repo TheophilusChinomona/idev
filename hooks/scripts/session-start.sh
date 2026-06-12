@@ -3,10 +3,10 @@
 # in CLAUDE.md ("Auto-Startup Sequence"). Reads per-project state from
 # .claude/idev/ in the current working directory. Cheap and silent when absent.
 
-IDEV_DIR=".claude/idev"
+IDEV_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/idev"
 
+# Truly silent when the project has no idev state (see README for /idev:idev-init).
 if [ ! -d "$IDEV_DIR" ]; then
-  echo "[idev] No $IDEV_DIR state directory found in this project. Run /idev:init to scaffold per-project caches, config templates, journal, and lessons file."
   exit 0
 fi
 

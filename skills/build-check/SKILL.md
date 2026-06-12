@@ -1,6 +1,6 @@
 ---
 name: build-check
-description: Auto-detects the project's build system and runs compile/type-check after file changes, auto-fixing straightforward errors (max 3 attempts). Use after completing a multi-file feature or when asked to build or check compilation.
+description: "Auto-detects the project's build system and runs compile/type-check after file changes, auto-fixing straightforward errors (max 3 attempts). Use after completing a multi-file feature or when asked to build or check compilation."
 ---
 
 # Build Check Skill
@@ -9,10 +9,10 @@ description: Auto-detects the project's build system and runs compile/type-check
 Auto-detect the project's build system and run compilation/type-checking after creating or modifying files. Catches errors (missing imports, type mismatches, DI failures) before the user discovers them at runtime.
 
 ## Activation
-Run automatically after:
-- Creating a new file (entity, service, controller, component, hook, etc.)
-- Modifying an existing file that could affect compilation
-- Completing a multi-file feature (run once at the end, not after each file)
+Run once per logical change set — after completing a multi-file feature or a self-contained modification, NOT after each individual file:
+- After completing a multi-file feature (run once at the end)
+- After a single-file change that could affect compilation (run once for that change)
+- When the user asks to build or check compilation
 
 ---
 

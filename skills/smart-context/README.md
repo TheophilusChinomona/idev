@@ -1,34 +1,34 @@
-# Smart Context Skill
+# Smart Context Skill (idev plugin)
 
-A generic, self-configuring context management skill for Claude Code that reduces token usage while maintaining accuracy.
+Token-optimized context loading for Claude Code: a lightweight per-project
+index is generated once, then context is loaded incrementally (Grep before
+Read) instead of re-scanning or bulk-reading files.
 
-## Features
+## How it works
 
-- **Zero Configuration** - Works on any project out of the box
-- **Dynamic Loading** - Loads only relevant context based on the task
-- **Tech Agnostic** - Supports React, Vue, Angular, .NET, Node, Python, etc.
-- **Self-Learning** - Builds and caches project structure automatically
+1. **Index generation**: `scanner.py` detects the tech stack, structure roots,
+   feature names, and file-naming patterns, and writes them to
+   `<project>/.claude/idev/smart-context/index.json`.
+2. **On task**: Claude reads the small index, identifies the relevant
+   feature/layer, and greps the project map for exact paths.
+3. **Targeted reads**: only the source files actually needed are read.
 
-## Installation
+## Generating the index
 
-Copy this folder to any project:
+From the project root:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/smart-context/scanner.py"
 ```
-${CLAUDE_PLUGIN_ROOT}/skills/smart-context/
-```
 
-## How It Works
-
-1. **First Run**: Scans project, detects tech stack, creates lightweight index
-2. **On Task**: Identifies relevant feature/module from user query
-3. **Load Context**: Loads only files related to that feature
-4. **Cache**: Stores structure to avoid re-scanning
+Tech agnostic: detects React/Next.js/Vue/Angular frontends and
+.NET/Python/Go/Rust/Java backends (root or one level of subdirectories).
 
 ## Files
 
-- `skill.md` - Main skill instructions for Claude
-- `scanner.py` - Project scanner script (optional, for pre-generation)
+- `SKILL.md` - Skill instructions for Claude (loading policy)
+- `scanner.py` - Index generator
 - `README.md` - This file
 
-## Usage
-
-The skill activates automatically when Claude detects it in `${CLAUDE_PLUGIN_ROOT}/skills/`.
+This skill ships with the idev plugin; the only per-project artifact is the
+generated `index.json` under `.claude/idev/smart-context/`.

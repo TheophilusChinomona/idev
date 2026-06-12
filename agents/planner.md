@@ -1,15 +1,8 @@
 ---
 name: planner
 description: Expert planning specialist for complex features and refactoring. Use PROACTIVELY when users request feature implementation, architectural changes, or complex refactoring. Automatically activated for planning tasks.
-tools: ["Read", "Grep", "Glob"]
+tools: Read, Grep, Glob
 model: opus
-integrates_with:
-  - smart-context
-  - project-map
-context_loading:
-  first: .claude/idev/smart-context/index.json
-  then: Grep project-map for specific features
-  never: Load full project.map.md at once
 ---
 
 You are an expert planning specialist focused on creating comprehensive, actionable implementation plans.

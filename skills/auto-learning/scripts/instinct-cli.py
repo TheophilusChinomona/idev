@@ -6,19 +6,17 @@ Commands:
   status   - Show all instincts and their status
   import   - Import instincts from file or URL
   export   - Export instincts to file
-  evolve   - Cluster instincts into skills/commands/agents
+  evolve   - Cluster instincts and print candidates for skills/commands/agents
 """
 
 import argparse
 import json
-import os
-import sys
 import re
+import sys
 import urllib.request
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
-from typing import Optional
 
 # ─────────────────────────────────────────────
 # Configuration
@@ -31,78 +29,152 @@ INHERITED_DIR = INSTINCTS_DIR / "inherited"
 EVOLVED_DIR = HOMUNCULUS_DIR / "evolved"
 OBSERVATIONS_FILE = HOMUNCULUS_DIR / "observations.jsonl"
 
-# Ensure directories exist
-for d in [PERSONAL_DIR, INHERITED_DIR, EVOLVED_DIR / "skills", EVOLVED_DIR / "commands", EVOLVED_DIR / "agents"]:
-    d.mkdir(parents=True, exist_ok=True)
+
+def ensure_dirs():
+    """Create the homunculus directory tree (called from main, not at import)."""
+    for d in [PERSONAL_DIR, INHERITED_DIR, EVOLVED_DIR / "skills",
+              EVOLVED_DIR / "commands", EVOLVED_DIR / "agents"]:
+        d.mkdir(parents=True, exist_ok=True)
 
 
 # ─────────────────────────────────────────────
-# Instinct Parser
+# Sanitization
 # ─────────────────────────────────────────────
 
-def parse_instinct_file(content: str) -> list[dict]:
-    """Parse YAML-like instinct file format."""
+# Same secret-pattern redaction as hooks/observe.py
+SECRET_RE = re.compile(
+    r"(api[_-]?key|token|secret|password|authorization)(\s*[=:]\s*)\S+",
+    re.IGNORECASE,
+)
+# Absolute filesystem paths (POSIX home dirs and Windows user dirs)
+PATH_RE = re.compile(
+    r"(?:/(?:home|Users)/[^\s\"'`]+|[A-Za-z]:\\Users\\[^\s\"'`]+)"
+)
+
+
+def sanitize(text: str) -> str:
+    """Redact secrets and absolute filesystem paths from exported text."""
+    text = SECRET_RE.sub(r"\1\2[REDACTED]", text)
+    text = PATH_RE.sub("<path>", text)
+    return text
+
+
+# ─────────────────────────────────────────────
+# Instinct Parser / Serializer
+# ─────────────────────────────────────────────
+
+def parse_instinct_file(content: str) -> list:
+    """Parse instinct files.
+
+    An instinct is a YAML frontmatter block (lines between two `---` lines)
+    followed by a markdown body that runs until the next frontmatter block
+    or EOF. The body attaches to the preceding frontmatter as `content`.
+    """
     instincts = []
-    current = {}
-    in_frontmatter = False
-    content_lines = []
+    lines = content.split('\n')
+    n = len(lines)
+    current = None
+    body_lines = []
 
-    for line in content.split('\n'):
+    def flush():
+        nonlocal current, body_lines
+        if current is not None:
+            current['content'] = '\n'.join(body_lines).strip()
+            instincts.append(current)
+        current = None
+        body_lines = []
+
+    i = 0
+    while i < n:
+        line = lines[i]
         if line.strip() == '---':
-            if in_frontmatter:
-                # End of frontmatter
-                in_frontmatter = False
-                if current:
-                    current['content'] = '\n'.join(content_lines).strip()
-                    instincts.append(current)
-                    current = {}
-                    content_lines = []
-            else:
-                # Start of frontmatter
-                in_frontmatter = True
-                if current:
-                    current['content'] = '\n'.join(content_lines).strip()
-                    instincts.append(current)
-                current = {}
-                content_lines = []
-        elif in_frontmatter:
-            # Parse YAML-like frontmatter
-            if ':' in line:
-                key, value = line.split(':', 1)
-                key = key.strip()
-                value = value.strip().strip('"').strip("'")
-                if key == 'confidence':
-                    current[key] = float(value)
-                else:
-                    current[key] = value
+            # Scan ahead for the closing '---' of a frontmatter block
+            j = i + 1
+            frontmatter = {}
+            closed = False
+            while j < n:
+                if lines[j].strip() == '---':
+                    closed = True
+                    break
+                if ':' in lines[j]:
+                    key, value = lines[j].split(':', 1)
+                    key = key.strip()
+                    raw = value.strip()
+                    # JSON-quoted scalars (as written by export) parse cleanly;
+                    # otherwise fall back to stripping plain quotes.
+                    try:
+                        parsed_value = json.loads(raw)
+                    except (ValueError, TypeError):
+                        parsed_value = raw.strip('"').strip("'")
+                    if key == 'confidence':
+                        try:
+                            parsed_value = float(parsed_value)
+                        except (TypeError, ValueError):
+                            pass
+                    frontmatter[key] = parsed_value
+                j += 1
+            if closed:
+                # Finish the previous instinct, start a new one
+                flush()
+                current = frontmatter
+                i = j + 1
+                continue
+            # Unclosed '---': treat as a plain body line
+        if current is not None:
+            body_lines.append(line)
+        i += 1
+
+    flush()
+    return [inst for inst in instincts if inst.get('id')]
+
+
+FRONTMATTER_KEYS = ['id', 'trigger', 'confidence', 'domain', 'source',
+                    'source_repo', 'imported_from']
+
+
+def serialize_instinct(inst: dict) -> str:
+    """Serialize one instinct to frontmatter + body.
+
+    String values are emitted with json.dumps, which produces valid
+    (escaped, quoted) YAML scalars — quotes in triggers can't corrupt output.
+    """
+    out = "---\n"
+    for key in FRONTMATTER_KEYS:
+        value = inst.get(key)
+        if value is None or value == '':
+            continue
+        if isinstance(value, bool):
+            out += f"{key}: {'true' if value else 'false'}\n"
+        elif isinstance(value, (int, float)):
+            out += f"{key}: {value}\n"
         else:
-            content_lines.append(line)
+            out += f"{key}: {json.dumps(str(value))}\n"
+    out += "---\n\n"
+    body = inst.get('content', '')
+    if body:
+        out += body + "\n"
+    out += "\n"
+    return out
 
-    # Don't forget the last instinct
-    if current:
-        current['content'] = '\n'.join(content_lines).strip()
-        instincts.append(current)
 
-    return [i for i in instincts if i.get('id')]
-
-
-def load_all_instincts() -> list[dict]:
+def load_all_instincts() -> list:
     """Load all instincts from personal and inherited directories."""
     instincts = []
 
     for directory in [PERSONAL_DIR, INHERITED_DIR]:
         if not directory.exists():
             continue
-        for file in directory.glob("*.yaml"):
-            try:
-                content = file.read_text()
-                parsed = parse_instinct_file(content)
-                for inst in parsed:
-                    inst['_source_file'] = str(file)
-                    inst['_source_type'] = directory.name
-                instincts.extend(parsed)
-            except Exception as e:
-                print(f"Warning: Failed to parse {file}: {e}", file=sys.stderr)
+        for pattern in ("*.yaml", "*.md"):
+            for file in sorted(directory.glob(pattern)):
+                try:
+                    content = file.read_text()
+                    parsed = parse_instinct_file(content)
+                    for inst in parsed:
+                        inst['_source_file'] = str(file)
+                        inst['_source_type'] = directory.name
+                    instincts.extend(parsed)
+                except Exception as e:
+                    print(f"Warning: Failed to parse {file}: {e}", file=sys.stderr)
 
     return instincts
 
@@ -143,14 +215,13 @@ def cmd_status(args):
     # Print by domain
     for domain in sorted(by_domain.keys()):
         domain_instincts = by_domain[domain]
-        print(f"## {domain.upper()} ({len(domain_instincts)})")
+        print(f"## {str(domain).upper()} ({len(domain_instincts)})")
         print()
 
         for inst in sorted(domain_instincts, key=lambda x: -x.get('confidence', 0.5)):
             conf = inst.get('confidence', 0.5)
             conf_bar = '#' * int(conf * 10) + '-' * (10 - int(conf * 10))
             trigger = inst.get('trigger', 'unknown trigger')
-            source = inst.get('source', 'unknown')
 
             print(f"  {conf_bar} {int(conf*100):3d}%  {inst.get('id', 'unnamed')}")
             print(f"            trigger: {trigger}")
@@ -177,6 +248,22 @@ def cmd_status(args):
 # ─────────────────────────────────────────────
 # Import Command
 # ─────────────────────────────────────────────
+
+def update_instinct_in_place(existing_inst: dict, new_inst: dict) -> None:
+    """Update an existing instinct's file in place (no duplicate files)."""
+    target = Path(existing_inst['_source_file'])
+    file_instincts = parse_instinct_file(target.read_text())
+    out = ""
+    for fi in file_instincts:
+        if fi.get('id') == new_inst.get('id'):
+            merged = dict(fi)
+            merged.update({k: v for k, v in new_inst.items()
+                           if not k.startswith('_')})
+            out += serialize_instinct(merged)
+        else:
+            out += serialize_instinct(fi)
+    target.write_text(out)
+
 
 def cmd_import(args):
     """Import instincts from file or URL."""
@@ -222,7 +309,7 @@ def cmd_import(args):
             existing_inst = next((e for e in existing if e.get('id') == inst_id), None)
             if existing_inst:
                 if inst.get('confidence', 0) > existing_inst.get('confidence', 0):
-                    to_update.append(inst)
+                    to_update.append((existing_inst, inst))
                 else:
                     duplicates.append(inst)
         else:
@@ -231,7 +318,7 @@ def cmd_import(args):
     # Filter by minimum confidence
     min_conf = args.min_confidence or 0.0
     to_add = [i for i in to_add if i.get('confidence', 0.5) >= min_conf]
-    to_update = [i for i in to_update if i.get('confidence', 0.5) >= min_conf]
+    to_update = [(e, i) for e, i in to_update if i.get('confidence', 0.5) >= min_conf]
 
     # Display summary
     if to_add:
@@ -241,7 +328,7 @@ def cmd_import(args):
 
     if to_update:
         print(f"\nUPDATE ({len(to_update)}):")
-        for inst in to_update:
+        for _, inst in to_update:
             print(f"  ~ {inst.get('id')} (confidence: {inst.get('confidence', 0.5):.2f})")
 
     if duplicates:
@@ -259,40 +346,47 @@ def cmd_import(args):
         print("\nNothing to import.")
         return 0
 
-    # Confirm
+    # Confirm. Never call input() without a TTY (would crash with EOFError
+    # under non-interactive stdin); proceed as confirmed instead.
     if not args.force:
-        response = input(f"\nImport {len(to_add)} new, update {len(to_update)}? [y/N] ")
-        if response.lower() != 'y':
-            print("Cancelled.")
-            return 0
+        if sys.stdin.isatty():
+            response = input(f"\nImport {len(to_add)} new, update {len(to_update)}? [y/N] ")
+            if response.lower() != 'y':
+                print("Cancelled.")
+                return 0
+        else:
+            print(f"\nNon-interactive session: importing {len(to_add)} new, "
+                  f"updating {len(to_update)} without prompt.")
 
-    # Write to inherited directory
-    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-    source_name = Path(source).stem if not source.startswith('http') else 'web-import'
-    output_file = INHERITED_DIR / f"{source_name}-{timestamp}.yaml"
+    # Updates: rewrite the existing instinct's file in place so the old and
+    # new versions don't both keep loading.
+    for existing_inst, inst in to_update:
+        update_instinct_in_place(existing_inst, inst)
 
-    all_to_write = to_add + to_update
-    output_content = f"# Imported from {source}\n# Date: {datetime.now().isoformat()}\n\n"
+    # New instincts: write to the inherited directory
+    output_file = None
+    if to_add:
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        source_name = Path(source).stem if not source.startswith('http') else 'web-import'
+        output_file = INHERITED_DIR / f"{source_name}-{timestamp}.yaml"
 
-    for inst in all_to_write:
-        output_content += "---\n"
-        output_content += f"id: {inst.get('id')}\n"
-        output_content += f"trigger: \"{inst.get('trigger', 'unknown')}\"\n"
-        output_content += f"confidence: {inst.get('confidence', 0.5)}\n"
-        output_content += f"domain: {inst.get('domain', 'general')}\n"
-        output_content += f"source: inherited\n"
-        output_content += f"imported_from: \"{source}\"\n"
-        if inst.get('source_repo'):
-            output_content += f"source_repo: {inst.get('source_repo')}\n"
-        output_content += "---\n\n"
-        output_content += inst.get('content', '') + "\n\n"
+        output_content = f"# Imported from {source}\n# Date: {datetime.now().isoformat()}\n\n"
+        for inst in to_add:
+            record = {k: v for k, v in inst.items() if not k.startswith('_')}
+            record.setdefault('trigger', 'unknown')
+            record.setdefault('confidence', 0.5)
+            record.setdefault('domain', 'general')
+            record['source'] = 'inherited'
+            record['imported_from'] = source
+            output_content += serialize_instinct(record)
 
-    output_file.write_text(output_content)
+        output_file.write_text(output_content)
 
-    print(f"\n✅ Import complete!")
+    print(f"\nImport complete.")
     print(f"   Added: {len(to_add)}")
-    print(f"   Updated: {len(to_update)}")
-    print(f"   Saved to: {output_file}")
+    print(f"   Updated (in place): {len(to_update)}")
+    if output_file:
+        print(f"   New instincts saved to: {output_file}")
 
     return 0
 
@@ -321,20 +415,19 @@ def cmd_export(args):
         print("No instincts match the criteria.")
         return 1
 
-    # Generate output
+    # Generate output. Sanitize string fields and bodies: redact absolute
+    # filesystem paths and secret-looking values before sharing.
     output = f"# Instincts export\n# Date: {datetime.now().isoformat()}\n# Total: {len(instincts)}\n\n"
 
     for inst in instincts:
-        output += "---\n"
-        for key in ['id', 'trigger', 'confidence', 'domain', 'source', 'source_repo']:
-            if inst.get(key):
-                value = inst[key]
-                if key == 'trigger':
-                    output += f'{key}: "{value}"\n'
-                else:
-                    output += f"{key}: {value}\n"
-        output += "---\n\n"
-        output += inst.get('content', '') + "\n\n"
+        record = {}
+        for key in FRONTMATTER_KEYS:
+            value = inst.get(key)
+            if value is None or value == '':
+                continue
+            record[key] = sanitize(str(value)) if isinstance(value, str) else value
+        record['content'] = sanitize(inst.get('content', ''))
+        output += serialize_instinct(record)
 
     # Write to file or stdout
     if args.output:
@@ -363,13 +456,7 @@ def cmd_evolve(args):
     print(f"  EVOLVE ANALYSIS - {len(instincts)} instincts")
     print(f"{'='*60}\n")
 
-    # Group by domain
-    by_domain = defaultdict(list)
-    for inst in instincts:
-        domain = inst.get('domain', 'general')
-        by_domain[domain].append(inst)
-
-    # High-confidence instincts by domain (candidates for skills)
+    # High-confidence instincts (candidates for skills)
     high_conf = [i for i in instincts if i.get('confidence', 0) >= 0.8]
     print(f"High confidence instincts (>=80%): {len(high_conf)}")
 
@@ -378,15 +465,19 @@ def cmd_evolve(args):
     for inst in instincts:
         trigger = inst.get('trigger', '')
         # Normalize trigger
-        trigger_key = trigger.lower()
+        trigger_key = str(trigger).lower()
         for keyword in ['when', 'creating', 'writing', 'adding', 'implementing', 'testing']:
             trigger_key = trigger_key.replace(keyword, '').strip()
+        # Guard: an empty normalized trigger would cluster unrelated
+        # instincts together — skip those.
+        if not trigger_key:
+            continue
         trigger_clusters[trigger_key].append(inst)
 
     # Find clusters with 3+ instincts (good skill candidates)
     skill_candidates = []
     for trigger, cluster in trigger_clusters.items():
-        if len(cluster) >= 2:
+        if len(cluster) >= 3:
             avg_conf = sum(i.get('confidence', 0.5) for i in cluster) / len(cluster)
             skill_candidates.append({
                 'trigger': trigger,
@@ -417,7 +508,7 @@ def cmd_evolve(args):
     if workflow_instincts:
         print(f"\n## COMMAND CANDIDATES ({len(workflow_instincts)})\n")
         for inst in workflow_instincts[:5]:
-            trigger = inst.get('trigger', 'unknown')
+            trigger = str(inst.get('trigger', 'unknown'))
             # Suggest command name
             cmd_name = trigger.replace('when ', '').replace('implementing ', '').replace('a ', '')
             cmd_name = cmd_name.replace(' ', '-')[:20]
@@ -438,10 +529,13 @@ def cmd_evolve(args):
             print()
 
     if args.generate:
-        print("\n[Would generate evolved structures here]")
-        print("  Skills would be saved to:", EVOLVED_DIR / "skills")
-        print("  Commands would be saved to:", EVOLVED_DIR / "commands")
-        print("  Agents would be saved to:", EVOLVED_DIR / "agents")
+        # Generation is not implemented in this CLI. Claude reads the cluster
+        # output above and writes the evolved files itself.
+        print("\n[--generate] This CLI does not write evolved files itself.")
+        print("  Review the clusters above and create the files under:")
+        print("    Skills:  ", EVOLVED_DIR / "skills")
+        print("    Commands:", EVOLVED_DIR / "commands")
+        print("    Agents:  ", EVOLVED_DIR / "agents")
 
     print(f"\n{'='*60}\n")
     return 0
@@ -456,7 +550,7 @@ def main():
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # Status
-    status_parser = subparsers.add_parser('status', help='Show instinct status')
+    subparsers.add_parser('status', help='Show instinct status')
 
     # Import
     import_parser = subparsers.add_parser('import', help='Import instincts')
@@ -473,9 +567,12 @@ def main():
 
     # Evolve
     evolve_parser = subparsers.add_parser('evolve', help='Analyze and evolve instincts')
-    evolve_parser.add_argument('--generate', action='store_true', help='Generate evolved structures')
+    evolve_parser.add_argument('--generate', action='store_true',
+                               help='Print where evolved files should be created (generation itself is done by Claude)')
 
     args = parser.parse_args()
+
+    ensure_dirs()
 
     if args.command == 'status':
         return cmd_status(args)

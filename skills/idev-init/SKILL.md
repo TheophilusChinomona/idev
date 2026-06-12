@@ -1,6 +1,6 @@
 ---
 name: idev-init
-description: Scaffolds the per-project .claude/idev/ state directory (caches, journal, lessons, config templates) for the idev plugin. Use when starting idev in a new project, when the SessionStart hook reports the state directory is missing, or when the user runs /idev:idev-init or asks to "set up idev".
+description: "Scaffolds the per-project .claude/idev/ state directory (caches, journal, lessons, config templates) for the idev plugin. Use when starting idev in a new project, when the SessionStart hook reports the state directory is missing, or when the user runs /idev:idev-init or asks to 'set up idev'."
 argument-hint: "[--with-claude-md-snippet]"
 allowed-tools: ["Bash", "Read", "Write", "Edit", "Glob"]
 ---
@@ -33,6 +33,10 @@ Initialize the `.claude/idev/` state directory in the current project. All idev 
 
 5. **Offer the CLAUDE.md snippet** (or do it directly if the user passed `--with-claude-md-snippet`): append the contents of `${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md` to the project's `CLAUDE.md` (create the file if missing). This holds per-project policies (protected branches, migration policy, API config) that the user should review and tune.
 
-6. **Optionally trigger first scans**: Ask whether to run the initial project scans now (smart-context index, file-index, pattern caches). If yes, follow the idev:smart-context skill to generate `.claude/idev/smart-context/index.json` first.
+6. **Optionally trigger first scans**: Ask whether to run the initial project scans now (smart-context index, file-index, pattern caches). If yes, generate `.claude/idev/smart-context/index.json` first by running the scanner from the project root:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/smart-context/scanner.py"
+   ```
+   If `python3` is unavailable, build the index manually per the idev:smart-context skill (detect the stack, feature names, and naming patterns, and write the same JSON shape by hand).
 
 7. **Report**: List what was created, what was skipped (already existed), and remind the user that caches regenerate automatically as the skills run.

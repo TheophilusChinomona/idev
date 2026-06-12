@@ -11,10 +11,16 @@
 
 set -e
 
-CONFIG_DIR="${HOME}/~/.claude/homunculus"
+CONFIG_DIR="${HOME}/.claude/homunculus"
 PID_FILE="${CONFIG_DIR}/.observer.pid"
 LOG_FILE="${CONFIG_DIR}/observer.log"
 OBSERVATIONS_FILE="${CONFIG_DIR}/observations.jsonl"
+INSTINCTS_DIR="${CONFIG_DIR}/instincts/personal"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_CONFIG="${SCRIPT_DIR}/../config.json"
+
+# Minimum observations before an analysis run (from config.json, default 20)
+MIN_OBS=$(python3 -c "import json,sys; print(int(json.load(open(sys.argv[1]))['observer']['min_observations_to_analyze']))" "$PLUGIN_CONFIG" 2>/dev/null || echo 20)
 
 mkdir -p "$CONFIG_DIR"
 
@@ -71,43 +77,64 @@ case "${1:-start}" in
 
     # The observer loop
     (
-      trap 'rm -f "$PID_FILE"; exit 0' TERM INT
-
       analyze_observations() {
         # Only analyze if we have enough observations
         obs_count=$(wc -l < "$OBSERVATIONS_FILE" 2>/dev/null || echo 0)
-        if [ "$obs_count" -lt 10 ]; then
-          return
+        if [ "$obs_count" -lt "$MIN_OBS" ]; then
+          return 0
         fi
 
         echo "[$(date)] Analyzing $obs_count observations..." >> "$LOG_FILE"
 
-        # Use Claude Code with Haiku to analyze observations
-        # This spawns a quick analysis session
-        if command -v claude &> /dev/null; then
-          claude --model haiku --max-turns 3 --print \
-            "Read $OBSERVATIONS_FILE and identify patterns. If you find 3+ occurrences of the same pattern, create an instinct file in $CONFIG_DIR/instincts/personal/ following the format in the observer agent spec. Be conservative - only create instincts for clear patterns." \
-            >> "$LOG_FILE" 2>&1 || true
+        # Headless `claude --print` cannot write files; ask it to OUTPUT the
+        # instinct markdown on stdout and write the file ourselves.
+        if ! command -v claude > /dev/null 2>&1; then
+          echo "[$(date)] 'claude' CLI not found; skipping analysis, keeping observations." >> "$LOG_FILE"
+          return 0
         fi
 
-        # Archive processed observations
-        if [ -f "$OBSERVATIONS_FILE" ]; then
-          archive_dir="${CONFIG_DIR}/observations.archive"
-          mkdir -p "$archive_dir"
-          mv "$OBSERVATIONS_FILE" "$archive_dir/processed-$(date +%Y%m%d-%H%M%S).jsonl"
-          touch "$OBSERVATIONS_FILE"
+        local analysis_output
+        if ! analysis_output=$(claude --model haiku --max-turns 3 --print \
+          "Read $OBSERVATIONS_FILE and identify recurring patterns. If you find a pattern with 3+ occurrences, output ONE instinct as markdown to stdout, in exactly this format: a YAML frontmatter block delimited by '---' lines containing id, trigger (quoted), confidence (0.3-0.9), domain, and source: session-observation; followed by a markdown body with '## Action' and '## Evidence' sections. Output ONLY the instinct markdown — no preamble, no code fences. Do NOT attempt to write any files. If there is no clear repeated pattern, output nothing. Be conservative." \
+          2>> "$LOG_FILE"); then
+          echo "[$(date)] Analysis run failed; keeping observations for retry." >> "$LOG_FILE"
+          return 0
+        fi
+
+        # Only persist output that looks like an instinct (has frontmatter)
+        if [ -n "$analysis_output" ] && printf '%s\n' "$analysis_output" | grep -q '^---'; then
+          mkdir -p "$INSTINCTS_DIR"
+          instinct_file="${INSTINCTS_DIR}/instinct-$(date +%Y%m%d-%H%M%S).md"
+          printf '%s\n' "$analysis_output" > "$instinct_file"
+          echo "[$(date)] Created instinct: $instinct_file" >> "$LOG_FILE"
+
+          # Archive processed observations only after a successful analysis
+          # that produced output — never throw data away on failure.
+          if [ -f "$OBSERVATIONS_FILE" ]; then
+            archive_dir="${CONFIG_DIR}/observations.archive"
+            mkdir -p "$archive_dir"
+            mv "$OBSERVATIONS_FILE" "$archive_dir/processed-$(date +%Y%m%d-%H%M%S).jsonl"
+            touch "$OBSERVATIONS_FILE"
+          fi
+        else
+          echo "[$(date)] No instinct produced; keeping observations." >> "$LOG_FILE"
         fi
       }
 
+      # Register traps before the loop so they are honored from the start.
+      trap 'rm -f "$PID_FILE"; exit 0' TERM INT
       # Handle SIGUSR1 for on-demand analysis
       trap 'analyze_observations' USR1
 
       echo "$$" > "$PID_FILE"
-      echo "[$(date)] Observer started (PID: $$)" >> "$LOG_FILE"
+      echo "[$(date)] Observer started (PID: $$, threshold: $MIN_OBS observations)" >> "$LOG_FILE"
 
       while true; do
-        # Check every 5 minutes
-        sleep 300
+        # Check every 5 minutes. Run sleep in the background and `wait` on it
+        # so signal traps (USR1/TERM) fire promptly instead of being deferred
+        # until the sleep finishes.
+        sleep 300 &
+        wait $! || true
 
         analyze_observations
       done

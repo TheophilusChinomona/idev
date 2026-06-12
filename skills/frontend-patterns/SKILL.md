@@ -1,6 +1,6 @@
 ---
 name: frontend-patterns
-description: Scans the codebase to auto-detect frontend conventions (pages, containers, components, hooks, services) and caches them. Use when creating or modifying frontend code so new files follow existing patterns exactly.
+description: "Scans the codebase to auto-detect frontend conventions (pages, containers, components, hooks, services) and caches them. Use when creating or modifying frontend code so new files follow existing patterns exactly."
 ---
 
 # Frontend Pattern Scanner Skill
@@ -165,13 +165,21 @@ Mutation hook: [pattern]
 - File naming: [kebab-case/PascalCase/camelCase]
 - Error handling: [pattern]
 - Navigation: [pattern]
+
+### Function Index
+[Compact list of exported/public functions, one per line:]
+functionName — file:line — one-line purpose
+[Cap at ~100 entries, most-used first. Used by function-extract for targeted
+reads and by cache-refresh for incremental updates. Update entries whenever
+adding or modifying functions.]
 ```
 
 ---
 
 ## Phase 5: Usage
 
-On subsequent tasks, load ONLY the cache file (~200 lines) instead of rescanning.
+On subsequent tasks, load only the cache file instead of rescanning.
+Keep the cache under ~250 lines by trimming examples if it grows beyond that.
 Rescan if user says "refresh patterns" or if cache is older than 7 days.
 
 ---

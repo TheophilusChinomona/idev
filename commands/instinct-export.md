@@ -1,91 +1,35 @@
 ---
-name: instinct-export
-description: Export instincts for sharing with teammates or other projects
-command: /instinct-export
+description: Export learned instincts to a shareable file for teammates or other machines
+argument-hint: "[--domain <name>] [--min-confidence <n>] [--output <file>]"
 ---
 
-# Instinct Export Command
+# Instinct Export
 
-Exports instincts to a shareable format. Perfect for:
-- Sharing with teammates
-- Transferring to a new machine
-- Contributing to project conventions
+Export instincts to a shareable YAML-frontmatter file. Useful for sharing with teammates, transferring to a new machine, or contributing to project conventions.
 
-## Usage
+## How to Run
 
-```
-/instinct-export                           # Export all personal instincts
-/instinct-export --domain testing          # Export only testing instincts
-/instinct-export --min-confidence 0.7      # Only export high-confidence instincts
-/instinct-export --output team-instincts.yaml
+Run the instinct CLI, passing through any user arguments:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py" export $ARGUMENTS
 ```
 
-## What to Do
+## Supported Flags (these are the only ones)
 
-1. Read instincts from `~/.claude/homunculus/instincts/personal/`
-2. Filter based on flags
-3. Strip sensitive information:
-   - Remove session IDs
-   - Remove file paths (keep only patterns)
-   - Remove timestamps older than "last week"
-4. Generate export file
+- `--domain <name>`: export only the specified domain
+- `--min-confidence <n>`: minimum confidence threshold
+- `--output <file>` / `-o <file>`: write to a file instead of stdout
 
-## Output Format
+## What the CLI Does
 
-Creates a YAML file:
+1. Loads instincts from `~/.claude/homunculus/instincts/{personal,inherited}/`
+2. Applies the domain/confidence filters
+3. Sanitizes output: absolute filesystem paths are replaced with `<path>` and secret-looking values (api keys, tokens, passwords) are replaced with `[REDACTED]`
+4. Writes each instinct as a `---` frontmatter block (id, trigger, confidence, domain, source) followed by its markdown body
 
-```yaml
-# Instincts Export
-# Generated: 2025-01-22
-# Source: personal
-# Count: 12 instincts
+## After Running
 
-version: "2.0"
-exported_by: "auto-learning"
-export_date: "2025-01-22T10:30:00Z"
-
-instincts:
-  - id: prefer-functional-style
-    trigger: "when writing new functions"
-    action: "Use functional patterns over classes"
-    confidence: 0.8
-    domain: code-style
-    observations: 8
-
-  - id: test-first-workflow
-    trigger: "when adding new functionality"
-    action: "Write test first, then implementation"
-    confidence: 0.9
-    domain: testing
-    observations: 12
-
-  - id: grep-before-edit
-    trigger: "when modifying code"
-    action: "Search with Grep, confirm with Read, then Edit"
-    confidence: 0.7
-    domain: workflow
-    observations: 6
-```
-
-## Privacy Considerations
-
-Exports include:
-- ✅ Trigger patterns
-- ✅ Actions
-- ✅ Confidence scores
-- ✅ Domains
-- ✅ Observation counts
-
-Exports do NOT include:
-- ❌ Actual code snippets
-- ❌ File paths
-- ❌ Session transcripts
-- ❌ Personal identifiers
-
-## Flags
-
-- `--domain <name>`: Export only specified domain
-- `--min-confidence <n>`: Minimum confidence threshold (default: 0.3)
-- `--output <file>`: Output file path (default: instincts-export-YYYYMMDD.yaml)
-- `--format <yaml|json|md>`: Output format (default: yaml)
-- `--include-evidence`: Include evidence text (default: excluded)
+- If `--output` was used, confirm the file path to the user.
+- If output went to stdout, offer to save it to a file the user names.
+- Skim the export for anything sensitive the regex-based sanitizer may have missed (project names, internal URLs) and warn the user before they share it.

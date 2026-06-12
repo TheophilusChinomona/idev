@@ -2,7 +2,6 @@
 name: observer
 description: Background agent that analyzes session observations to detect patterns and create instincts. Uses Haiku for cost-efficiency.
 model: haiku
-run_mode: background
 ---
 
 # Observer Agent
@@ -12,7 +11,7 @@ A background agent that analyzes observations from Claude Code sessions to detec
 ## When to Run
 
 - After significant session activity (20+ tool calls)
-- When user runs `/analyze-patterns`
+- As the background loop started by `agents/start-observer.sh` (check it with `/idev:instinct-status` or `start-observer.sh status`)
 - On a scheduled interval (configurable, default 5 minutes)
 - When triggered by observation hook (SIGUSR1)
 

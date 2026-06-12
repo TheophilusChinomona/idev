@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Scans the codebase to auto-detect backend code conventions (controllers, services, entities, DTOs, DI registration) and caches them. Use when creating or modifying backend code so new files follow existing patterns exactly.
+description: "Scans the codebase to auto-detect backend code conventions (controllers, services, entities, DTOs, DI registration) and caches them. Use when creating or modifying backend code so new files follow existing patterns exactly."
 ---
 
 # Backend Pattern Scanner Skill
@@ -226,13 +226,21 @@ DB Config: [path] → Insert after line [N]
 - Response wrapper: [pattern]
 - Auth context: [how user identity is accessed]
 - Testing: [framework and pattern]
+
+### Function Index
+[Compact list of exported/public functions, one per line:]
+functionName — file:line — one-line purpose
+[Cap at ~100 entries, most-used first. Used by function-extract for targeted
+reads and by cache-refresh for incremental updates. Update entries whenever
+adding or modifying functions.]
 ```
 
 ---
 
 ## Phase 5: Usage
 
-On subsequent tasks, load ONLY the cache file (~200 lines) instead of rescanning.
+On subsequent tasks, load only the cache file instead of rescanning.
+Keep the cache under ~250 lines by trimming examples if it grows beyond that.
 Rescan if user says "refresh patterns" or if cache is older than 7 days.
 
 ---
@@ -247,5 +255,5 @@ When creating a new backend feature, the scanner detects what files are needed:
 - [ ] Route/Controller in [detected path]
 - [ ] DI/Module registration in [detected file] at line [N]
 - [ ] DB registration in [detected file] at line [N]
-- [ ] Database change file (if migration-free rule exists)
+- [ ] Database change file (if a migration-free rule exists — check the project rules file: `.claude/idev/rules.md` or the project config)
 - [ ] Tests in [detected test path]

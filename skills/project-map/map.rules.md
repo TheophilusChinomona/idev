@@ -1,18 +1,21 @@
 # Project Map Rules
 
-## For Split projects (FE + BE):
-1. Track backend controllers, endpoints, DTOs.
-2. Track frontend pages, components, API calls.
-3. Map FE pages to backend endpoints.
+## What the generator emits (`ai_map_updater.py`)
 
-## For Unified projects (Blazor Server, MVC):
-1. Track Pages/UI components (.razor, .cshtml).
-2. Track Services and Interfaces.
-3. Track Domain/Entities.
-4. Track Infrastructure/Data layer.
-5. Map Pages to the Services they consume directly (no API layer).
+### Split projects (FE + BE)
+1. Flat `FRONTEND FILES:` and `BACKEND FILES:` listings (generic source extensions).
+2. A `DOMAIN ENTITIES SUMMARY:` count when a `Domain/` folder exists under the backend.
 
-## General rules:
-6. Append all updates to CHANGE LOG with timestamp.
-7. Never store raw source code, only summaries.
-8. Only update when structural changes detected or cooldown elapsed.
+### Unified projects (Blazor Server, MVC)
+1. Files categorized into: `PAGES / UI COMPONENTS`, `SERVICES / INTERFACES`,
+   `DOMAIN / ENTITIES`, `INFRASTRUCTURE / DATA`, `OTHER FILES`.
+2. Referenced projects discovered via `.csproj` `ProjectReference` elements are
+   listed under `REFERENCED PROJECTS:` and their files included with a
+   `[ProjectName]` prefix.
+
+## General rules
+1. Never store raw source code in the map — file paths and counts only.
+2. The watcher only rewrites the map when the source tree changes
+   (file count / max mtime signature); unchanged ticks are skipped.
+3. Consumers must Grep the map for relevant entries — never load it whole.
+4. If the map is missing or stale, regenerate it before trusting it.

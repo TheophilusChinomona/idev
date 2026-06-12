@@ -1,6 +1,6 @@
 ---
 name: self-review
-description: Code-quality checklist run on Claude's own output before reporting done: unused imports, missing error handling, naming consistency, security issues. Use after completing any code changes.
+description: "Code-quality checklist run on Claude's own output before reporting done: unused imports, missing error handling, naming consistency, security issues. Use after completing any code changes."
 ---
 
 # Self-Review Skill
@@ -40,38 +40,41 @@ Run these on every file created or modified:
 
 ---
 
-## Phase 2: Backend Checks (.NET / API)
+## Phase 2: Backend Checks
+
+Derive the project's actual invariants from the pattern caches (`.claude/idev/backend-patterns/cache.md`) and the project rules file — do NOT assume any of these are universal. The items below are EXAMPLES of common invariants; replace them with what the caches say this project actually uses.
 
 ```
-□ Controller methods use correct HTTP verb (GET for reads, POST for creates, PUT for updates, DELETE for deletes)
-□ Route paths follow project convention (kebab-case, consistent with existing routes)
-□ All controller methods have authorization attribute (or inherit from base)
-□ Service methods have try-catch with error logging (matches project pattern)
-□ Entity has all required audit fields (CreatedDate, CreatedBy, UpdatedDate, UpdatedBy, RecordStatusId)
-□ Soft delete uses RecordStatusId, NOT physical delete (unless explicitly requested)
-□ Multi-tenancy: ClientId is checked in all queries (no cross-tenant data leaks)
-□ DTOs don't expose internal fields (RecordStatusId, CreatedBy unless needed)
-□ Extension method names are consistent (ToDto, ToEntity, ToReturnDto)
+□ Controller/route methods use correct HTTP verb (GET for reads, POST for creates, PUT for updates, DELETE for deletes)
+□ Route paths follow project convention (consistent with existing routes)
+□ All endpoints have the project's auth attribute/middleware (or inherit from base)
+□ Service methods follow the project's error handling pattern
+□ Entity has all audit fields the project requires (EXAMPLE: CreatedDate, CreatedBy, UpdatedDate, UpdatedBy)
+□ Soft delete uses the project's soft-delete flag, NOT physical delete (EXAMPLE: a RecordStatusId column)
+□ Multi-tenancy: tenant filter column checked in all queries, if the project is multi-tenant (EXAMPLE: a ClientId column)
+□ DTOs don't expose internal fields
+□ Mapping method names are consistent with the project convention
 □ No N+1 query patterns (loading related entities in a loop)
 ```
 
 ---
 
-## Phase 3: Frontend Checks (React / TypeScript)
+## Phase 3: Frontend Checks
+
+Derive the project's actual invariants from the pattern caches (`.claude/idev/frontend-patterns/cache.md`) and the project rules file. The items below are EXAMPLES of common invariants — adapt to the detected framework, UI library, and styling approach.
 
 ```
-□ Components use FC typing (or match project convention)
+□ Components use the project's typing convention (EXAMPLE: React FC typing)
 □ Props interfaces are defined (not inline anonymous types)
 □ Hooks follow naming convention (use* prefix)
-□ useQuery/useMutation have proper query keys
+□ useQuery/useMutation have proper query keys (if a query library is used)
 □ Error states are handled (isError, error display)
 □ Loading states are handled (isLoading, skeleton/spinner)
 □ Empty states are handled (no data → show empty message)
-□ Event handlers are memoized with useCallback where needed
+□ Event handlers are memoized where needed
 □ No direct state mutation (always use setter functions)
-□ Ant Design components follow project patterns (size, styling)
-□ Tailwind classes are consistent with project style
-□ No inline styles when Tailwind class exists
+□ UI library components follow project patterns (size, styling)
+□ Styling is consistent with the project's approach (EXAMPLE: Tailwind classes, no inline styles when a utility class exists)
 □ Types match the API response shape (check api-contract-validation)
 ```
 

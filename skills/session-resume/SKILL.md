@@ -1,6 +1,6 @@
 ---
 name: session-resume
-description: Cross-session context persistence. Load .claude/idev/session-resume/last-session.json at session start to restore working context; save state before compaction or session end.
+description: "Cross-session context persistence via .claude/idev/session-resume/last-session.json. Use when resuming work in a new session, or to save working context at task completion or when the user asks to save."
 ---
 
 # Session Resume Skill
@@ -9,8 +9,10 @@ description: Cross-session context persistence. Load .claude/idev/session-resume
 Persist working context across sessions so Claude can resume exactly where it left off without re-discovering files, re-reading code, or re-learning what was being worked on.
 
 ## Activation
-- **Save**: At the end of every session or before context compaction
-- **Load**: At the start of every new session (before any task work)
+- **Save**: At task completion, or when the user asks to save context
+- **Load**: At the start of a new session (before any task work)
+
+(A PreCompact hook could automate saving before context compaction, but none is wired by default — don't rely on it.)
 
 ---
 
@@ -29,7 +31,7 @@ This file is loaded at session start, giving Claude instant awareness of:
 
 ## Phase 1: Save Session State
 
-At end of session (or when context is getting large), save:
+At task completion (or when the user asks to save context), save:
 
 ```json
 {
@@ -69,7 +71,7 @@ At end of session (or when context is getting large), save:
 At session start:
 
 ```
-1. Read last-session.json (~30 lines, ~50 tokens)
+1. Read last-session.json (~30 lines, roughly 300 tokens)
 2. If lastTask.status == "in-progress":
    → Inform user: "Last session was working on: [description]"
    → Offer to continue or start fresh
@@ -85,10 +87,9 @@ At session start:
 
 Save the session state when ANY of these occur:
 1. User explicitly says "save session" or "save context"
-2. Before context compaction (auto-summarization)
+2. A task is completed (update lastTask.status)
 3. User switches to a different feature/task
-4. A task is completed (update lastTask.status)
-5. A blocker is encountered (update openIssues)
+4. A blocker is encountered (update openIssues)
 
 ---
 

@@ -1,5 +1,19 @@
 __pycache__/
 *.pyc
 .DS_Store
-.claude/*.local.md
-.claude/settings.local.json
+.claude/
+.mcp.json
+
+# Editor/IDE
+.idea
+.vscode
+
+# Environment dotfiles (not part of the plugin)
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.profile
+.ripgreprc
+.zprofile
+.zshrc

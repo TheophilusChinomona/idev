@@ -1,6 +1,6 @@
 # idev — Token-Optimized Development Workflow Plugin
 
-A Claude Code plugin packaging 27 skills, 3 agents, 4 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning whichever project it lands in (.NET/React, Django, Express, Flutter, …).
+A Claude Code plugin packaging 23 skills, 3 agents, 4 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -12,7 +12,7 @@ claude --plugin-dir /path/to/idev
 /idev:idev-init
 ```
 
-`/idev:idev-init` creates `.claude/idev/` (caches, task journal, lessons file, config templates) and offers to append the per-project policy snippet (`templates/claude-md-snippet.md`) to the project's `CLAUDE.md`.
+`/idev:idev-init` is the one required setup step per project: it creates `.claude/idev/` (caches, task journal, lessons file, config templates) and offers to append the per-project policy snippet (`templates/claude-md-snippet.md`) to the project's `CLAUDE.md`. The SessionStart hook stays completely silent in projects where `.claude/idev/` doesn't exist, so nothing happens until you run it.
 
 ## How it works
 
@@ -22,12 +22,12 @@ claude --plugin-dir /path/to/idev
 
 ## Components
 
-### Skills (27)
+### Skills (23)
 | Group | Skills |
 |-------|--------|
-| Context | smart-context, project-map, project-map-usage, file-index, function-extract, strategic-compact |
+| Context | smart-context, project-map, file-index, function-extract, strategic-compact |
 | Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards |
-| Verification | build-check, post-creation-verify, api-contract-validation, api-validator, api-docs-sync, feature-completeness, self-review, test-map |
+| Verification | build-check, post-creation-verify, api-contract-validation, feature-completeness, self-review, test-map |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
 | Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init |
 
@@ -38,8 +38,10 @@ claude --plugin-dir /path/to/idev
 `/idev:evolve`, `/idev:instinct-status`, `/idev:instinct-import`, `/idev:instinct-export` — the auto-learning instinct CLI (state in `~/.claude/homunculus/`).
 
 ### Optional hooks (not enabled by default)
-- **auto-learning observer**: add `${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/hooks/observe.sh` as a PreToolUse/PostToolUse hook in your settings to capture observations.
-- **strategic-compact suggester**: add `${CLAUDE_PLUGIN_ROOT}/skills/strategic-compact/suggest-compact.sh` as a PreToolUse hook to get /compact suggestions.
+- **auto-learning observer**: add `skills/auto-learning/hooks/observe.sh` as a PreToolUse/PostToolUse hook in your settings to capture observations.
+- **strategic-compact suggester**: add `skills/strategic-compact/suggest-compact.sh` as a PostToolUse hook with matcher `"Edit|Write"` to get /compact suggestions.
+
+Note: `${CLAUDE_PLUGIN_ROOT}` only expands inside the plugin's own `hooks/hooks.json` — it does **not** expand in your user/project `settings.json`. When wiring these up in settings, use the absolute path to the plugin install directory instead.
 
 ## Workflow
 

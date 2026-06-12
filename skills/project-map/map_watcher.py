@@ -1,14 +1,19 @@
 import time
 import json
 import os
+import sys
 from pathlib import Path
-from ai_map_updater import create_project_map
+from ai_map_updater import create_project_map, IGNORE_DIRS
 
 UPDATE_INTERVAL = 60  # 1 minute
 # State lives in the project, not the plugin install dir (run from project root)
 STATE_DIR = Path.cwd() / ".claude" / "idev" / "project-map"
 CONFIG_FILE = STATE_DIR / "watcher_config.json"
 LEGACY_CONFIG_FILE = STATE_DIR / "config.json"
+
+# Never include generated state in the change signature (the map rewrite itself
+# would otherwise trigger an endless rewrite loop)
+SIGNATURE_IGNORE_DIRS = set(IGNORE_DIRS) | {".claude"}
 
 
 def load_config():
@@ -35,9 +40,48 @@ def save_config(config):
         json.dump(legacy, f, indent=2)
 
 
+def compute_signature(config):
+    """
+    Cheap change detection: walk the configured source dirs (pruning ignored
+    dirs) and return (file_count, max_mtime). If the signature is unchanged
+    between ticks, the map rewrite is skipped.
+    """
+    paths = [p for p in (config.get("frontend_path"),
+                         config.get("backend_path"),
+                         config.get("unified_path")) if p]
+    if not paths:
+        paths = [str(Path.cwd())]
+
+    file_count = 0
+    max_mtime = 0.0
+    for root in paths:
+        if not os.path.isdir(root):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in SIGNATURE_IGNORE_DIRS]
+            for f in filenames:
+                file_count += 1
+                try:
+                    mtime = os.path.getmtime(os.path.join(dirpath, f))
+                except OSError:
+                    continue
+                if mtime > max_mtime:
+                    max_mtime = mtime
+    return (file_count, max_mtime)
+
+
 def ask_project_config():
     """Interactively confirm or change project configuration at startup."""
     config = load_config()
+
+    # Never prompt when stdin is not a TTY (e.g. launched in the background)
+    if not sys.stdin.isatty():
+        if config and config.get("project_type"):
+            return config
+        print("No saved configuration and stdin is not a TTY.")
+        print("Run interactively once, or create "
+              ".claude/idev/project-map/watcher_config.json manually.")
+        sys.exit(1)
 
     if config and config.get("project_type"):
         project_type = config["project_type"]
@@ -97,14 +141,23 @@ def ask_project_config():
 if __name__ == "__main__":
     print("AI Map Watcher Starting...")
 
-    config = ask_project_config()
+    try:
+        config = ask_project_config()
 
-    # Always create/update the map at startup
-    create_project_map(config=config)
-
-    print(f"AI Map Watcher Running... updates every {UPDATE_INTERVAL} seconds.")
-
-    while True:
-        time.sleep(UPDATE_INTERVAL)
-        print("Watcher tick: regenerating project map...")
+        # Always create/update the map at startup
         create_project_map(config=config)
+        last_signature = compute_signature(config)
+
+        print(f"AI Map Watcher Running... checks every {UPDATE_INTERVAL} seconds "
+              "(Ctrl-C to stop).")
+
+        while True:
+            time.sleep(UPDATE_INTERVAL)
+            signature = compute_signature(config)
+            if signature == last_signature:
+                continue  # nothing changed; skip the rewrite
+            print("Watcher tick: changes detected, regenerating project map...")
+            create_project_map(config=config)
+            last_signature = signature
+    except KeyboardInterrupt:
+        print("\nAI Map Watcher stopped.")

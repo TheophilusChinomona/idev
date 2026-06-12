@@ -1,5 +1,5 @@
 {
-  "_instructions": "TEMPLATE — fill in per project, or let the skills populate it. The pattern skills (smart_context, backend-patterns, frontend-patterns, architecture-scanner) auto-detect stack and paths on first scan; this file holds the conventions and config that CANNOT be detected by scanning (business rules, agreed conventions, limits).",
+  "_instructions": "TEMPLATE — fill in per project, or let the skills populate it. The pattern skills (smart-context, backend-patterns, frontend-patterns, architecture-scanner) auto-detect stack and paths on first scan; this file holds the conventions and config that CANNOT be detected by scanning (business rules, agreed conventions, limits).",
   "project": {
     "name": "{{PROJECT_NAME}}",
     "type": "{{e.g. aspnet-react | django | express-vue}}",

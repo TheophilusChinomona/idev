@@ -1,6 +1,6 @@
 ---
 name: api-contract-validation
-description: Verifies frontend API calls match backend endpoints (URL paths, HTTP methods, request/response types). Use after creating or modifying API endpoints, service functions, or DTOs, or when asked to validate API contracts or check FE-BE alignment.
+description: "Verifies frontend API calls match backend endpoints (URL paths, HTTP methods, request/response types). Use after creating or modifying API endpoints, service functions, or DTOs, or when asked to validate API alignment, check FE-BE contracts, or generate API contract docs."
 ---
 
 # API Contract Validation Skill
@@ -183,12 +183,14 @@ API Contract Validation: api/orders
 
 ### Missing FE service function for existing BE endpoint:
 ```
-→ Generate the service function following frontend-patterns cache template
+→ Generate the service function following the project's detected conventions
+  (see the frontend-patterns skill cache at .claude/idev/frontend-patterns/cache.md)
 ```
 
 ### Missing BE endpoint for existing FE service call:
 ```
-→ Flag as error — this causes 404 at runtime (lesson L003)
+→ Flag as error — this causes 404 at runtime
+  (see the lessons-learned skill log if present for past instances)
 ```
 
 ### Type mismatch:
@@ -232,6 +234,33 @@ Write to `.claude/idev/api-contract-validation/cache.json`:
   }
 }
 ```
+
+---
+
+## Phase 7: Documentation Output (Optional)
+
+When asked to generate API contract docs (or after validating a full feature), write one compact doc per feature to `.claude/idev/api-contracts/<feature>.md`:
+
+```markdown
+# Orders API Contract
+> Updated: YYYY-MM-DD | Source: api-contract-validation
+
+| Method | Endpoint              | FE function   | Request        | Response       | Status |
+|--------|-----------------------|---------------|----------------|----------------|--------|
+| GET    | api/orders/get-all    | getOrders     | —              | OrderDto[]     | valid  |
+| POST   | api/orders/create     | createOrder   | OrderCreateDto | OrderDto       | valid  |
+| PUT    | api/orders/update/{k} | updateOrder   | OrderUpdateDto | OrderDto       | type mismatch: key string↔Guid |
+
+Notes:
+- Auth: all endpoints require [Authorize]
+- Casing: camelCase ↔ PascalCase (auto via System.Text.Json)
+```
+
+Rules:
+- Keep each doc under ~40 lines — a table plus brief notes, not prose
+- Update the existing doc in place; do not duplicate
+- Derive entries from the validation cache (Phase 6) rather than re-scanning source
+- Paths: cache lives at `.claude/idev/api-contract-validation/cache.json`; generated docs live in `.claude/idev/api-contracts/`
 
 ---
 

@@ -1,79 +1,29 @@
 ---
-name: instinct-status
-description: Show all learned instincts with their confidence levels
-command: /instinct-status
-implementation: python3 ${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py status
+description: Show all learned instincts with their confidence levels, grouped by domain
 ---
 
-# Instinct Status Command
+# Instinct Status
 
-Shows all learned instincts with their confidence scores, grouped by domain.
+Show the user the current state of the auto-learning instinct store.
 
-## Implementation
+## How to Run
+
+Run the instinct CLI and relay its output:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py status
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/auto-learning/scripts/instinct-cli.py" status
 ```
 
-## Usage
+The `status` subcommand takes no flags.
 
-```
-/instinct-status
-/instinct-status --domain code-style
-/instinct-status --low-confidence
-```
+## What It Prints
 
-## What to Do
+- Total instinct count, split into personal (auto-learned) and inherited (imported)
+- Instincts grouped by domain, each with a confidence bar, trigger, and action summary
+- Observation stats from `~/.claude/homunculus/observations.jsonl`
 
-1. Read all instinct files from `~/.claude/homunculus/instincts/personal/`
-2. Read inherited instincts from `~/.claude/homunculus/instincts/inherited/`
-3. Display them grouped by domain with confidence bars
+## After Running
 
-## Output Format
-
-```
-📊 Instinct Status
-==================
-
-## Code Style (4 instincts)
-
-### prefer-functional-style
-Trigger: when writing new functions
-Action: Use functional patterns over classes
-Confidence: ████████░░ 80%
-Source: session-observation | Last updated: 2025-01-22
-
-### use-path-aliases
-Trigger: when importing modules
-Action: Use @/ path aliases instead of relative imports
-Confidence: ██████░░░░ 60%
-Source: repo-analysis (github.com/acme/webapp)
-
-## Testing (2 instincts)
-
-### test-first-workflow
-Trigger: when adding new functionality
-Action: Write test first, then implementation
-Confidence: █████████░ 90%
-Source: session-observation
-
-## Workflow (3 instincts)
-
-### grep-before-edit
-Trigger: when modifying code
-Action: Search with Grep, confirm with Read, then Edit
-Confidence: ███████░░░ 70%
-Source: session-observation
-
----
-Total: 9 instincts (4 personal, 5 inherited)
-Observer: Running (last analysis: 5 min ago)
-```
-
-## Flags
-
-- `--domain <name>`: Filter by domain (code-style, testing, git, etc.)
-- `--low-confidence`: Show only instincts with confidence < 0.5
-- `--high-confidence`: Show only instincts with confidence >= 0.7
-- `--source <type>`: Filter by source (session-observation, repo-analysis, inherited)
-- `--json`: Output as JSON for programmatic use
+1. Present the CLI output to the user (verbatim or lightly summarized).
+2. If the user wants filtering (by domain, confidence, or source), apply it yourself by reading the relevant instinct files under `~/.claude/homunculus/instincts/{personal,inherited}/` — the CLI does not support filter flags.
+3. If there are no instincts yet, point the user to the hook setup in the `auto-learning` skill (observation hooks must be enabled for instincts to accumulate).
