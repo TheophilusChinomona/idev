@@ -12,9 +12,16 @@
 # (use the absolute plugin path - ${CLAUDE_PLUGIN_ROOT} does not expand in
 # user settings).
 #
+# OFF by default: exits immediately unless the per-project opt-in flag exists.
+# Toggle with /idev:hooks enable|disable compact (creates/removes the flag).
 # Always exits 0; emits nothing below the threshold.
 
 $ErrorActionPreference = "SilentlyContinue"
+
+# Opt-in guard (mirrors suggest-compact.sh)
+$projectDir = if ($env:CLAUDE_PROJECT_DIR) { $env:CLAUDE_PROJECT_DIR } else { "." }
+$flag = Join-Path $projectDir ".claude/idev/compact-suggestions-enabled"
+if (-not (Test-Path $flag)) { exit 0 }
 
 # Read the hook JSON from stdin and extract session_id
 $raw = [Console]::In.ReadToEnd()

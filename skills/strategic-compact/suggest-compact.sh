@@ -11,10 +11,15 @@
 # - Strategic compacting preserves context through logical phases
 #   (after exploration/planning/debugging, after a milestone)
 #
-# See SKILL.md in this folder for the settings.json registration snippet.
+# Registered by the plugin's hooks/hooks.json for all plugin users, but OFF
+# by default: exits immediately unless the per-project opt-in flag exists.
+# Toggle with /idev:hooks enable|disable compact (creates/removes the flag).
 # Always exits 0; emits nothing below the threshold.
 
 set -u
+
+flag="${CLAUDE_PROJECT_DIR:-.}/.claude/idev/compact-suggestions-enabled"
+[ -f "$flag" ] || exit 0
 
 input=$(cat)
 

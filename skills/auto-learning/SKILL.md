@@ -65,30 +65,15 @@ Session Activity
 
 ## Quick Start
 
-### 1. Enable Observation Hooks (opt-in)
+### 1. Enable Observation (opt-in)
 
-Add to your `~/.claude/settings.json`. NOTE: `${CLAUDE_PLUGIN_ROOT}` is NOT expanded in user settings — replace `<idev-plugin-root>` below with the absolute path of the installed idev plugin (find it with `claude plugin list` or under `~/.claude/plugins/`):
+The observation hooks are pre-registered by the plugin's `hooks/hooks.json` (PreToolUse/PostToolUse, all tools) but **off by default** — `observe.sh` exits instantly unless the global opt-in flag `~/.claude/homunculus/enabled` exists. Enable with:
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "<idev-plugin-root>/skills/auto-learning/hooks/observe.sh pre"
-      }]
-    }],
-    "PostToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "<idev-plugin-root>/skills/auto-learning/hooks/observe.sh post"
-      }]
-    }]
-  }
-}
 ```
+/idev:hooks enable observer
+```
+
+Disable with `/idev:hooks disable observer`. No settings.json editing, takes effect immediately, and the toggle is global (observations span all projects).
 
 `observe.sh` is a thin wrapper that pipes the hook JSON to `observe.py` (the canonical implementation). The `pre`/`post` argument tells it the hook phase; if omitted, it falls back to the `hook_event_name` field in the payload. The hook truncates inputs/outputs at 5000 chars, redacts secret-looking values, honors `capture_tools`/`ignore_tools` from `config.json`, and rotates `observations.jsonl` into `observations.archive/` past `max_file_size_mb`.
 

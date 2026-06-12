@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# idev commit-msg hook
+# Validates the commit subject against the team pattern. Default: optional
+# "ABC-123: " ticket prefix + conventional-commit subject.
+# Override the pattern (POSIX ERE) with either:
+#   - first line of <repo>/.claude/idev/commit-pattern
+#   - git config idev.commitpattern '<ERE>'
+# Subject-length limit is a warning, not a failure.
+
+MSG_FILE="$1"
+
+subject=$(grep -v '^#' "$MSG_FILE" | sed -n '/./{p;q;}')
+
+# Always allow git-generated and fixup messages
+case "$subject" in
+  Merge\ *|Revert\ *|fixup!*|squash!*|amend!*) exit 0 ;;
+  "") echo "idev commit-msg: empty commit message." >&2; exit 1 ;;
+esac
+
+pattern=""
+toplevel=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$toplevel" ] && [ -f "$toplevel/.claude/idev/commit-pattern" ]; then
+  pattern=$(sed -n '1p' "$toplevel/.claude/idev/commit-pattern")
+fi
+[ -n "$pattern" ] || pattern=$(git config --get idev.commitpattern)
+[ -n "$pattern" ] || pattern='^([A-Z][A-Z0-9]+-[0-9]+: )?(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\([A-Za-z0-9._/-]+\))?!?: .+'
+
+if ! printf '%s' "$subject" | grep -qE "$pattern"; then
+  {
+    echo "idev commit-msg: subject does not match the team format."
+    echo "  subject: $subject"
+    echo "  pattern: $pattern"
+    echo "  example: ABC-123: feat(auth): add refresh-token rotation"
+    echo "Edit the pattern in .claude/idev/commit-pattern or 'git config idev.commitpattern'."
+  } >&2
+  exit 1
+fi
+
+if [ "${#subject}" -gt 72 ]; then
+  echo "idev commit-msg: warning — subject is ${#subject} chars (aim for <= 72)." >&2
+fi
+
+exit 0

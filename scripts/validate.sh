@@ -60,7 +60,8 @@ for entries in h.get("hooks", {}).values():
     for e in entries:
         for hk in e.get("hooks", []):
             if hk.get("type") == "command":
-                print(hk["command"].split()[-1] if hk["command"].startswith("bash ") else hk["command"])
+                toks = [t for t in hk["command"].split() if t.endswith((".sh", ".py", ".ps1"))]
+                print(toks[0] if toks else hk["command"].split()[0])
 ')
 
 if [ "$fail" -eq 0 ]; then

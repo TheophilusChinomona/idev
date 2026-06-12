@@ -35,9 +35,23 @@ Strategic compaction at logical boundaries:
 
 ## Hook Setup
 
-Add to your `~/.claude/settings.json`. NOTE: `${CLAUDE_PLUGIN_ROOT}` is NOT expanded in user settings — replace `<idev-plugin-root>` below with the absolute path of the installed idev plugin (find it with `claude plugin list` or under `~/.claude/plugins/`):
+The hook is pre-registered by the plugin's `hooks/hooks.json` (PostToolUse,
+matcher `Edit|Write`) but **off by default** — the script exits instantly
+unless the per-project opt-in flag exists. Enable it with:
 
-### Unix/macOS
+```
+/idev:hooks enable compact
+```
+
+which creates `<project>/.claude/idev/compact-suggestions-enabled`. Disable
+with `/idev:hooks disable compact`. No settings.json editing, takes effect
+immediately.
+
+<details><summary>Manual wiring (only if you can't use the plugin-registered hook)</summary>
+
+Add to `~/.claude/settings.json` — NOTE: `${CLAUDE_PLUGIN_ROOT}` is NOT
+expanded in user settings; use the absolute plugin path. The matcher is a
+regex over tool names, not an expression language:
 
 ```json
 {
@@ -52,24 +66,9 @@ Add to your `~/.claude/settings.json`. NOTE: `${CLAUDE_PLUGIN_ROOT}` is NOT expa
   }
 }
 ```
-
-### Windows (PowerShell)
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{
-        "type": "command",
-        "command": "powershell -ExecutionPolicy Bypass -File \"<idev-plugin-root>\\skills\\strategic-compact\\suggest-compact.ps1\""
-      }]
-    }]
-  }
-}
-```
-
-The matcher is a regex over tool names (`Edit|Write`) — not an expression language.
+(Windows: `powershell -ExecutionPolicy Bypass -File "<idev-plugin-root>\\skills\\strategic-compact\\suggest-compact.ps1"`.)
+The opt-in flag file is still required either way.
+</details>
 
 ## Configuration
 

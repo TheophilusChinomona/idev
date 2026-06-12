@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# idev prepare-commit-msg hook
+# Prefixes the commit subject with the ticket ID derived from the branch name
+# (e.g. branch feature/ABC-123-login -> "ABC-123: <subject>").
+# Skips merges/squashes/rebases and messages that already carry the ticket.
+# Customize the ticket regex via: git config idev.ticketregex '<ERE>'
+# Disable prefixing entirely via:  git config idev.ticketprefix false
+
+MSG_FILE="$1"
+SOURCE="${2:-}"
+
+case "$SOURCE" in
+  merge|squash) exit 0 ;;
+esac
+
+[ "$(git config --get idev.ticketprefix)" = "false" ] && exit 0
+
+branch=$(git symbolic-ref --short -q HEAD) || exit 0
+
+regex=$(git config --get idev.ticketregex)
+[ -n "$regex" ] || regex='[A-Z][A-Z0-9]+-[0-9]+'
+
+ticket=$(printf '%s' "$branch" | grep -oE "$regex" | head -1)
+[ -n "$ticket" ] || exit 0
+
+# Already mentioned anywhere in the message? Don't double up.
+grep -q "$ticket" "$MSG_FILE" && exit 0
+
+# Prepend "TICKET: " to the first non-comment, non-empty line.
+tmp="$MSG_FILE.idev.$$"
+awk -v t="$ticket" '
+  !done && $0 !~ /^#/ && $0 != "" { print t ": " $0; done = 1; next }
+  { print }
+' "$MSG_FILE" > "$tmp" && mv "$tmp" "$MSG_FILE"
+
+exit 0

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0 — 2026-06-12
+
+### Added
+- `/idev:hooks` command: one-stop management of the optional hooks. The
+  observer and compact-suggester hooks are now pre-registered in the plugin's
+  `hooks/hooks.json`, guarded by opt-in flag files (off by default, near-zero
+  cost when disabled) — enabling them is `/idev:hooks enable observer|compact`
+  instead of hand-editing settings.json with absolute paths.
+- Team commit-message tooling: `commit-style` skill (reads
+  `.claude/idev/commit-style.md` so Claude writes the team format proactively)
+  plus `prepare-commit-msg` / `commit-msg` git hook templates (ticket prefix
+  from branch name, configurable subject validation) installed via
+  `/idev:hooks install-git-hooks`.
+- `/idev:idev-init` now offers a low-prompt permissions preset (exact-path
+  `permissions.allow` entries for the plugin's read-only scripts and read-only
+  git commands) and the git hooks install.
+
+### Changed
+- 24 skills, 5 commands. auto-learning and strategic-compact SKILL.md setup
+  sections rewritten around `/idev:hooks`; manual settings wiring demoted to
+  a fallback.
+
 ## 0.2.0 — 2026-06-12
 
 Full-plugin review and repair. Headline: several advertised features were

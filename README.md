@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 23 skills, 3 agents, 4 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 24 skills, 3 agents, 5 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -68,7 +68,7 @@ For bigger jobs, delegate to the bundled subagents: **planner** (read-only — e
 
 ### 4. Auto-learning (optional)
 
-The instinct subsystem learns reusable habits from your sessions, stored globally in `~/.claude/homunculus/` (not per-project). Wire `skills/auto-learning/hooks/observe.sh` as a PreToolUse/PostToolUse hook to capture observations (inputs are secret-redacted, tools filterable via `config.json`), then:
+The instinct subsystem learns reusable habits from your sessions, stored globally in `~/.claude/homunculus/` (not per-project). Turn it on with `/idev:hooks enable observer` (inputs are secret-redacted, tools filterable via `config.json`), then:
 
 - `/idev:instinct-status` — see learned instincts and confidence levels
 - `/idev:evolve` — cluster related instincts into a proposed skill/command
@@ -91,11 +91,11 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 ## Components
 
-### Skills (23)
+### Skills (24)
 | Group | Skills |
 |-------|--------|
 | Context | smart-context, project-map, file-index, function-extract, strategic-compact |
-| Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards |
+| Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards, commit-style |
 | Verification | build-check, post-creation-verify, api-contract-validation, feature-completeness, self-review, test-map |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
 | Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init |
@@ -103,14 +103,28 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 ### Agents (3)
 `planner` (read-only planning specialist), `refactor-cleaner` (dead-code removal), `security-reviewer` (deep security audits).
 
-### Commands (4)
+### Commands (5)
+`/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:evolve`, `/idev:instinct-status`, `/idev:instinct-import`, `/idev:instinct-export` — the auto-learning instinct CLI (state in `~/.claude/homunculus/`).
 
-### Optional hooks (not enabled by default)
-- **auto-learning observer**: add `skills/auto-learning/hooks/observe.sh` as a PreToolUse/PostToolUse hook in your settings to capture observations.
-- **strategic-compact suggester**: add `skills/strategic-compact/suggest-compact.sh` as a PostToolUse hook with matcher `"Edit|Write"` to get /compact suggestions.
+### Optional hooks — managed by `/idev:hooks`, off by default
 
-Note: `${CLAUDE_PLUGIN_ROOT}` only expands inside the plugin's own `hooks/hooks.json` — it does **not** expand in your user/project `settings.json`. When wiring these up in settings, use the absolute path to the plugin install directory instead.
+The auto-learning observer and the strategic-compact suggester are pre-registered in the plugin's own `hooks/hooks.json`, guarded by opt-in flag files so they cost ~nothing until enabled. No settings.json editing:
+
+```
+/idev:hooks                       # status of all toggles
+/idev:hooks enable observer       # capture session observations (global)
+/idev:hooks enable compact        # /compact suggestions (per project)
+/idev:hooks install-git-hooks     # team commit-message hooks (see below)
+```
+
+### Team commit messages
+
+`/idev:hooks install-git-hooks` installs two git hooks into the repo: `prepare-commit-msg` (auto-prefixes the ticket ID parsed from the branch name) and `commit-msg` (validates the subject against the team pattern — default: optional `ABC-123:` prefix + conventional commits, configurable via `.claude/idev/commit-pattern` or `git config idev.commitpattern`). The `commit-style` skill reads `.claude/idev/commit-style.md` so Claude writes conforming messages proactively; the git hooks enforce the same format for every teammate, with or without Claude.
+
+### Fewer permission prompts
+
+`/idev:idev-init` offers to add a `permissions.allow` preset to the project's `.claude/settings.json`: exact-path allowances for the plugin's read-only scripts (scanner, instinct CLI, map generator) plus read-only git (`status`, `diff`, `log`, `branch`). Bundled agents' Read/Grep/Glob tools never prompt — prompts come from Bash invocations, which is what the preset removes. Nothing broad is ever added (no blanket `python3` allowance).
 
 ## Workflow
 
