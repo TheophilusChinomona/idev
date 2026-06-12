@@ -19,5 +19,7 @@ first of developer/develop/main/master on origin).
    resolutions, verification results, rollback point, PR readiness.
 3. If the agent escalated ambiguous conflicts, walk the user through each
    decision before resuming.
-4. On SYNCED: offer to create the PR (`gh pr create` targeting the base
-   branch, message per the commit-style skill) — only on explicit yes.
+4. On SYNCED: offer to create the PR targeting the base branch — only on
+   explicit yes. Use the platform from project config / origin URL:
+   `az repos pr create` for Azure DevOps remotes, `gh pr create` for
+   GitHub. Title and description per the commit-style skill's PR format.

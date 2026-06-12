@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.10.0 — 2026-06-12
+
+### Added
+- Azure DevOps support: PR-touching features (branch-sync PR offers,
+  sync-branch, new review-pr) detect the platform from the origin URL
+  (dev.azure.com/visualstudio.com → `az repos`, github.com → `gh`), or
+  via `git.platform` in project config.
+- `/idev:review-pr <id> [--security]`: fetches the PR (az or gh), reviews
+  with the code-reviewer agent against project conventions, optional
+  security-reviewer pass; posting back is offered, never automatic.
+- PR title/description format in the commit-style skill (What/Why/Testing/
+  Notes for reviewer).
+- Team rollout README section with the documented `extraKnownMarketplaces`
+  + `enabledPlugins` project-settings snippet (schema verified against the
+  official Claude Code docs), trust/consent behavior, version-bump update
+  semantics, and the vendored-directory fallback for GitHub-blocked
+  networks.
+
 ## 0.9.0 — 2026-06-12
 
 ### Added

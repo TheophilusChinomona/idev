@@ -53,5 +53,7 @@ Build: <actual result>   Tests: <which ran, actual result>
 ## Open items
 <ambiguous conflicts escalated, pre-existing failures, anything skipped>
 
-Ready for PR into <base>: YES/NO. (Offer gh pr create; do not run unasked.)
+Ready for PR into <base>: YES/NO. (Offer PR creation — `az repos pr create`
+on Azure DevOps remotes, `gh pr create` on GitHub, per the branch-sync
+skill's platform detection; do not run unasked.)
 ```

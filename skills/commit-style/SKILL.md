@@ -45,6 +45,29 @@ refreshed. Rotate the refresh token on each renewal per OWASP.
 Refs: ABC-123
 ```
 
+## Pull request format
+
+When creating a PR (any platform — `az repos pr create` on Azure DevOps,
+`gh pr create` on GitHub), unless `.claude/idev/commit-style.md` overrides:
+
+- **Title**: same convention as the commit subject (ticket prefix + typed
+  imperative summary). For a single-commit branch, reuse the subject.
+- **Description**:
+
+```markdown
+## What
+2-4 bullets of user-visible change (not a commit list — the platform shows those).
+
+## Why
+The problem/ticket context in 1-3 sentences.
+
+## Testing
+What was actually run: build, tests, browser-test report path if UI.
+
+## Notes for reviewer
+Risky spots, decisions needing eyes, rollback hint. Omit if none.
+```
+
 ## Anti-patterns
 
 - "fix stuff", "wip", "updates" — the hook rejects these; so should you.

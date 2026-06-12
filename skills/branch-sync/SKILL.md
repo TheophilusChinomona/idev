@@ -68,8 +68,19 @@ git push origin <feature-branch>    # plain push; merge never needs force
 ```
 Report: base branch + commits merged in (`git log --oneline <old-head>..HEAD`
 summary), conflicts resolved per file with one-line rationale, verification
-results (actual output), and PR readiness. Offer `gh pr create` (target =
-base branch) — don't create it unasked.
+results (actual output), and PR readiness. Offer to create the PR — don't
+create it unasked. Platform from `git.platform` in project config, or detect
+from `git remote get-url origin`:
+
+```bash
+# Azure DevOps (dev.azure.com / *.visualstudio.com) — needs the azure-devops
+# az extension; org/project/repo auto-detected from the git remote:
+az repos pr create --source-branch <feature> --target-branch <base> \
+  --title "<commit-style title>" --description "<PR body per commit-style skill>"
+
+# GitHub:
+gh pr create --base <base> --title "..." --body "..."
+```
 
 ## Recovery
 
