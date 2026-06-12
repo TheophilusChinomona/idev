@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 — 2026-06-12
+
+### Added
+- Four agents adapted from agency-agents (MIT, © 2025 AgentLand
+  Contributors — https://github.com/msitarzewski/agency-agents):
+  `backend-architect` (system/schema/API design specs, advisory read-only),
+  `frontend-developer` (UI implementation driven by the frontend-patterns
+  cache), `code-reviewer` (general prioritized diff review, read-only;
+  complements the security-only security-reviewer), and `onboarding-guide`
+  (facts-only codebase orientation and execution tracing, read-only).
+  Adaptations: kebab-case names, standard frontmatter, idev cache
+  integration, source-project residue removed, no fabricated-metric
+  reporting. 7 agents total.
+
 ## 0.4.0 — 2026-06-12
 
 ### Added

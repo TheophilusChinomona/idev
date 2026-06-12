@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 25 skills, 3 agents, 6 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 25 skills, 7 agents, 6 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -64,7 +64,7 @@ Useful things to say:
 
 ### 3. Agents
 
-For bigger jobs, delegate to the bundled subagents: **planner** (read-only — explores the codebase and returns a step-by-step implementation plan before you commit to changes), **refactor-cleaner** (finds and removes dead code, honoring never-remove rules it reads from your project config), **security-reviewer** (read-only audit — injection, authz, secrets, leakage — reports findings without modifying anything).
+For bigger jobs, delegate to the bundled subagents: **planner** (step-by-step implementation plan for a task), **backend-architect** (system/schema/API design specs before building), **frontend-developer** (implements UI following your frontend-patterns cache), **code-reviewer** (general diff review with prioritized findings), **security-reviewer** (security-only deep audit), **refactor-cleaner** (dead-code removal honoring never-remove rules), and **onboarding-guide** (facts-only codebase orientation — "where should I start", "how does a request flow"). All reviewers and the planner/architect/guide are read-only.
 
 ### 4. Auto-learning (optional)
 
@@ -100,8 +100,18 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
 | Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init, skill-benchmark |
 
-### Agents (3)
-`planner` (read-only planning specialist), `refactor-cleaner` (dead-code removal), `security-reviewer` (deep security audits).
+### Agents (7)
+| Agent | Role |
+|-------|------|
+| planner | read-only implementation planning for a specific task |
+| backend-architect | system design specs: decomposition, schemas, API contracts, migrations (advisory, read-only) |
+| frontend-developer | UI implementation following the project's frontend-patterns cache |
+| code-reviewer | general diff/PR review — correctness, maintainability, performance, tests (read-only) |
+| security-reviewer | security-only deep audit (read-only) |
+| refactor-cleaner | dead-code removal honoring project never-remove rules |
+| onboarding-guide | facts-only codebase orientation and execution-path tracing (read-only) |
+
+backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
 ### Commands (6)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
