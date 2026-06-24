@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.1 — 2026-06-24
+
+### Fixed
+- `codebase-explainer`: reconcile the `notebooklm` CLI wrapper against
+  notebooklm-py 0.7.2 (verified against the installed binary). `create` now
+  passes `--use` to set the active notebook context; `source add` drops the
+  non-existent `--wait` flag and pins `--type file`; preflight's auth probe
+  uses `notebooklm list` (exits non-zero when unauthenticated) instead of
+  `auth check` (a diagnostic that exits 0 even on failure). `generate video`
+  and `download video` were already correct.
+
 ## 0.11.0 — 2026-06-24
 
 ### Added

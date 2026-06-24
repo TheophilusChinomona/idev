@@ -31,6 +31,8 @@ def test_create_notebook_invokes_cli_with_title():
     assert args[0] == mod.NB_BIN
     assert "create" in args
     assert "My Repo — Overview" in args
+    # --use makes the new notebook the active context for the calls that follow.
+    assert "--use" in args
 
 
 def test_generate_video_includes_style_and_instructions():
@@ -50,6 +52,9 @@ def test_add_source_file_passes_path():
     args = fake.calls[0][0]
     assert "source" in args and "add" in args
     assert "/abs/docs/onboarding/00-overview.md" in args
+    # `source add` has no --wait flag in notebooklm-py 0.7.2; type is pinned to file.
+    assert "--wait" not in args
+    assert "--type" in args and "file" in args
 
 
 def test_download_video_passes_output_path():

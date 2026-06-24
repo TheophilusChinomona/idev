@@ -11,8 +11,10 @@ import subprocess
 import sys
 
 NB_BIN = "notebooklm"
-AUTH_CHECK_ARGS = ["notebooks", "list"]
-INSTALL_HINT = 'install it with:  pip install "notebooklm-py[browser]"  (then: notebooklm login)'
+# `list` exits non-zero when unauthenticated; `auth check` exits 0 even on failure
+# (it is a diagnostic, not a gate), so it cannot be used here. Verified vs 0.7.2.
+AUTH_CHECK_ARGS = ["list", "--limit", "1"]
+INSTALL_HINT = 'install it with:  pipx install notebooklm-py  (or pip install "notebooklm-py[browser]"), then: notebooklm login'
 LOGIN_HINT = "not authenticated — run:  notebooklm login"
 
 

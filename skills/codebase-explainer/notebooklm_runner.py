@@ -2,7 +2,12 @@
 
 Plugin code never imports notebooklm-py; it shells out so the dependency is
 only needed at runtime in the target environment. All CLI flags live in the
-`*_args` builders below — reconcile them with `notebooklm <cmd> --help`.
+`*_args` builders below — reconciled against notebooklm-py 0.7.2.
+
+Notebook-context model: `create --use` makes the new notebook the active
+context, so the subsequent `source add` / `generate video` / `download video`
+calls operate on it without threading an id. This run is sequential
+(one notebook fully built before the next), so the shared active context is safe.
 """
 
 import subprocess
@@ -15,14 +20,17 @@ class NotebookLMError(RuntimeError):
 
 
 def _create_args(title):
-    return ["create", title]
+    # --use sets the new notebook as the active context for the calls that follow.
+    return ["create", title, "--use"]
 
 
 def _add_source_args(path):
-    return ["source", "add", path, "--wait"]
+    # `source add` has no --wait flag in 0.7.2; --type file pins local-file handling.
+    return ["source", "add", path, "--type", "file"]
 
 
 def _generate_video_args(instructions, style):
+    # --format defaults to "explainer"; --style is one of the 9 visual styles.
     return ["generate", "video", instructions, "--style", style, "--wait"]
 
 
