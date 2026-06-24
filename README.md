@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 27 skills, 9 agents, 10 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 28 skills, 9 agents, 11 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
 
 ## Install & Setup
 
@@ -91,7 +91,7 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 ## Components
 
-### Skills (27)
+### Skills (28)
 | Group | Skills |
 |-------|--------|
 | Context | smart-context, project-map, file-index, function-extract, strategic-compact |
@@ -99,6 +99,7 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 | Verification | build-check, post-creation-verify, api-contract-validation, feature-completeness, self-review, test-map, browser-test |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
 | Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init, skill-benchmark |
+| Onboarding | codebase-explainer |
 
 ### Agents (7)
 | Agent | Role |
@@ -115,13 +116,14 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (10)
+### Commands (11)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
 `/idev:sync-branch` — merge the team base branch into the current feature branch before a PR; conflict resolution + verification + report.
 `/idev:upgrade` — reconcile a project's `.claude/idev/` state with the installed plugin version after updates (missing dirs/config keys, stale CLAUDE.md snippet and git hooks).
 `/idev:review-pr` — fetch and review a PR (Azure DevOps or GitHub) with the code-reviewer agent; optional `--security` pass.
+`/idev:explain-codebase` — turn a repo into an onboarding playlist: analysis docs plus NotebookLM explainer videos (overview + per-subsystem); mandatory doc-review checkpoint; resumable build loop respecting daily limits.
 
 ### Git platform support
 

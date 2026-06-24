@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 — 2026-06-24
+
+### Added
+- Add `codebase-explainer` skill and `/idev:explain-codebase` command: turns a
+  repo into an onboarding playlist — analysis docs plus NotebookLM explainer
+  videos (overview + per-subsystem), with a doc-review checkpoint and a
+  resumable, daily-limit-friendly build loop. Built on `notebooklm-py`.
+
 ## 0.10.0 — 2026-06-12
 
 ### Added
