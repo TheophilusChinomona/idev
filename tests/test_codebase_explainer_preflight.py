@@ -29,6 +29,20 @@ def test_auth_ready_reflects_exit_code():
     assert mod.auth_ready(run=_fail_run) is False
 
 
+def test_auth_check_uses_auth_check_command():
+    mod = load_script("ce_preflight")
+    seen = {}
+
+    def spy_run(args, **kwargs):
+        seen["args"] = args
+        return subprocess.CompletedProcess(args, 0, "ok", "")
+
+    mod.auth_ready(run=spy_run)
+    # Reconciled against notebooklm-py 0.7.2: `notebooklm list` exits non-zero
+    # when unauthenticated (auth check exits 0 even on failure, so is unusable).
+    assert seen["args"] == [mod.NB_BIN, "list", "--limit", "1"]
+
+
 def test_preflight_ready_when_cli_and_auth():
     mod = load_script("ce_preflight")
     out = mod.preflight(which=lambda name: "/usr/bin/notebooklm", run=_ok_run)
