@@ -5,6 +5,9 @@
 
 This project uses the **idev** plugin. Per-project state lives in `.claude/idev/` — caches regenerate by scanning this project; do not hand-edit cache files. Run `/idev:hooks` to manage optional hooks.
 
+### Onboarding a codebase
+New to this repo? Run `/idev:explain-codebase` (codebase-explainer skill) to generate an onboarding playlist — analysis docs in `docs/onboarding/` plus NotebookLM explainer videos (one overview + one per subsystem). It reuses the onboarding-guide agent and idev caches to map the code, then pauses for you to review the docs before any video is generated.
+
 ### Context discipline (every session, before anything else)
 1. Caches first: `.claude/idev/smart-context/index.json` for "which files implement X", `file-index` for paths, `project-map/project.map.md` (grep it, never load whole), pattern caches' Function Index for "where is function Y".
 2. Grep before Read; read sections (offset/limit), not whole files.
