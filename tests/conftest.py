@@ -20,6 +20,10 @@ SCRIPT_PATHS = {
     "observe": PLUGIN_ROOT / "skills" / "auto-learning" / "hooks" / "observe.py",
     "scanner": PLUGIN_ROOT / "skills" / "smart-context" / "scanner.py",
     "ai_map_updater": PLUGIN_ROOT / "skills" / "project-map" / "ai_map_updater.py",
+    "ce_state": PLUGIN_ROOT / "skills" / "codebase-explainer" / "plan_state.py",
+    "ce_runner": PLUGIN_ROOT / "skills" / "codebase-explainer" / "notebooklm_runner.py",
+    "ce_build": PLUGIN_ROOT / "skills" / "codebase-explainer" / "build_videos.py",
+    "ce_preflight": PLUGIN_ROOT / "skills" / "codebase-explainer" / "preflight.py",
 }
 
 _counter = itertools.count()
