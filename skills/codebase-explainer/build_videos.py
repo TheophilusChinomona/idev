@@ -48,6 +48,7 @@ def build_all(plan_path, state_path, index_path, runner=None, state_mod=None):
             for src in video["sources"]:
                 runner.add_source_file(src)
             runner.generate_video(video["instructions"], style)
+            # Inside the try so any failure here leaves status non-done, enabling retry on resume.
             os.makedirs(os.path.dirname(os.path.abspath(video["output"])), exist_ok=True)
             runner.download_video(video["output"])
         except runner.NotebookLMError as exc:

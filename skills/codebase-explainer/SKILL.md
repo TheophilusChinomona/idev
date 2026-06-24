@@ -62,8 +62,9 @@ Then write `.claude/idev/codebase-explainer/plan.json`:
 }
 ```
 - `sources` are file paths (docs + a few key raw files for grounding — hybrid).
-- `style` applies to every video for a consistent look; expose the user's choice
-  if they named one, else default `whiteboard`.
+- `style` applies to every video for a consistent look; set it to the `--style <visual-style>` value from `$ARGUMENTS` (default `whiteboard` if omitted).
+- If a `subsystem` positional argument was given in `$ARGUMENTS`, limit `videos` to the overview entry plus that one subsystem's entry only (still write the overview doc for context, but omit all other subsystem docs from plan.json).
+- If few/no subsystems were detected (tiny repo, same as Stage 2), omit the per-subsystem `NN-<subsystem>.md` docs and include only the overview video in plan.json.
 
 ## Stage 4 — CHECKPOINT (mandatory)
 STOP. Tell the user the docs are in `docs/onboarding/` and ask them to review/edit
