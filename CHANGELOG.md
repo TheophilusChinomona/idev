@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.2 — 2026-06-25
+
+### Fixed
+- `codebase-explainer`: fix NotebookLM source uploads, verified end-to-end by
+  generating a full playlist against the live service. `source add --type file`
+  returned 400 Bad Request, so file uploads now use auto-detect. NotebookLM also
+  rejects code/data extensions (`.py`, `.sh`, `.json` → 400), so the build now
+  routes sources by extension: document types (`.md`, `.txt`, `.pdf`, ...) upload
+  as files, and other files are added as pasted text sources (new
+  `notebooklm_runner.add_source_text`). Completes the 0.7.2 CLI reconciliation.
+
 ## 0.11.1 — 2026-06-24
 
 ### Fixed

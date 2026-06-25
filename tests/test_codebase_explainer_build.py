@@ -41,11 +41,28 @@ class RecordingRunner:
     def add_source_file(self, path, run=None):
         self.calls.append(("source", path))
 
+    def add_source_text(self, text, title, run=None):
+        self.calls.append(("source_text", title))
+
     def generate_video(self, instructions, style, run=None):
         self.calls.append(("generate", style))
 
     def download_video(self, out_path, run=None):
         self.calls.append(("download", out_path))
+
+
+def test_add_source_routes_by_extension(tmp_path):
+    mod = load_script("ce_build")
+    runner = RecordingRunner()
+    md = tmp_path / "doc.md"
+    md.write_text("# doc")
+    code = tmp_path / "scanner.py"
+    code.write_text("print('hi')\n")
+    mod._add_source(runner, str(md))
+    mod._add_source(runner, str(code))
+    # .md uploads natively; .py is added as a text source titled by basename.
+    assert ("source", str(md)) in runner.calls
+    assert ("source_text", "scanner.py") in runner.calls
 
 
 def test_build_all_success_marks_all_done(tmp_path):

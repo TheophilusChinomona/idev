@@ -18,3 +18,6 @@ __pycache__/
 .ripgreprc
 .zprofile
 .zshrc
+
+# Generated codebase-explainer output (local artifact, not plugin source)
+docs/onboarding/
