@@ -25,8 +25,15 @@ def _create_args(title):
 
 
 def _add_source_args(path):
-    # `source add` has no --wait flag in 0.7.2; --type file pins local-file handling.
-    return ["source", "add", path, "--type", "file"]
+    # `source add` auto-detects the source type from the path. Passing --type file
+    # explicitly triggers a 400 on upload in 0.7.2, and there is no --wait flag here.
+    return ["source", "add", path]
+
+
+def _add_text_args(text, title):
+    # NotebookLM's uploader rejects code/data extensions (.py, .sh, .json -> 400),
+    # so code files are added as pasted text sources with a descriptive title.
+    return ["source", "add", text, "--type", "text", "--title", title]
 
 
 def _generate_video_args(instructions, style):
@@ -52,6 +59,10 @@ def create_notebook(title, run=subprocess.run):
 
 def add_source_file(path, run=subprocess.run):
     _invoke(_add_source_args(path), run)
+
+
+def add_source_text(text, title, run=subprocess.run):
+    _invoke(_add_text_args(text, title), run)
 
 
 def generate_video(instructions, style, run=subprocess.run):

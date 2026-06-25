@@ -23,6 +23,22 @@ def _load_sibling(name):
     return module
 
 
+# NotebookLM accepts these as native file uploads; other extensions (.py, .sh,
+# .json, ...) 400 on upload, so they are added as pasted text sources instead.
+NATIVE_UPLOAD_EXT = {".md", ".markdown", ".txt", ".pdf", ".docx", ".doc", ".epub"}
+
+
+def _add_source(runner, path):
+    """Add one source, routing by extension: native upload for doc types, else text."""
+    ext = os.path.splitext(path)[1].lower()
+    if ext in NATIVE_UPLOAD_EXT:
+        runner.add_source_file(path)
+        return
+    with open(path, encoding="utf-8") as fh:
+        content = fh.read()
+    runner.add_source_text(content, os.path.basename(path))
+
+
 def build_all(plan_path, state_path, index_path, runner=None, state_mod=None):
     if runner is None:
         runner = _load_sibling("notebooklm_runner")
@@ -46,7 +62,7 @@ def build_all(plan_path, state_path, index_path, runner=None, state_mod=None):
         try:
             runner.create_notebook(video["notebook_name"])
             for src in video["sources"]:
-                runner.add_source_file(src)
+                _add_source(runner, src)
             runner.generate_video(video["instructions"], style)
             # Inside the try so any failure here leaves status non-done, enabling retry on resume.
             os.makedirs(os.path.dirname(os.path.abspath(video["output"])), exist_ok=True)

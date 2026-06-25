@@ -52,9 +52,21 @@ def test_add_source_file_passes_path():
     args = fake.calls[0][0]
     assert "source" in args and "add" in args
     assert "/abs/docs/onboarding/00-overview.md" in args
-    # `source add` has no --wait flag in notebooklm-py 0.7.2; type is pinned to file.
+    # `source add` auto-detects type in 0.7.2; --wait doesn't exist and --type file
+    # triggers a 400 on upload, so neither flag is passed.
     assert "--wait" not in args
-    assert "--type" in args and "file" in args
+    assert "--type" not in args
+
+
+def test_add_source_text_passes_text_type_and_title():
+    mod = load_script("ce_runner")
+    fake = FakeRun()
+    mod.add_source_text("print('hi')\n", "scanner.py", run=fake)
+    args = fake.calls[0][0]
+    assert "source" in args and "add" in args
+    assert "print('hi')\n" in args
+    assert "--type" in args and "text" in args
+    assert "--title" in args and "scanner.py" in args
 
 
 def test_download_video_passes_output_path():
