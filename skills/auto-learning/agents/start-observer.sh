@@ -93,13 +93,23 @@ case "${1:-start}" in
           return 0
         fi
 
+        # Analyze a bounded tail, not the whole file. These observation lines
+        # are multi-KB each; feeding the entire (growing) file makes `claude`
+        # exhaust its turn budget just reading it and every run fails. A small
+        # recent sample is enough to spot recurring patterns.
+        local sample_file
+        sample_file=$(mktemp)
+        tail -n 50 "$OBSERVATIONS_FILE" > "$sample_file"
+
         local analysis_output
-        if ! analysis_output=$(claude --model haiku --max-turns 3 --print \
-          "Read $OBSERVATIONS_FILE and identify recurring patterns. If you find a pattern with 3+ occurrences, output ONE instinct as markdown to stdout, in exactly this format: a YAML frontmatter block delimited by '---' lines containing id, trigger (quoted), confidence (0.3-0.9), domain, and source: session-observation; followed by a markdown body with '## Action' and '## Evidence' sections. Output ONLY the instinct markdown — no preamble, no code fences. Do NOT attempt to write any files. If there is no clear repeated pattern, output nothing. Be conservative." \
+        if ! analysis_output=$(claude --model haiku --max-turns 6 --print \
+          "Read $sample_file and identify recurring patterns. If you find a pattern with 3+ occurrences, output ONE instinct as markdown to stdout, in exactly this format: a YAML frontmatter block delimited by '---' lines containing id, trigger (quoted), confidence (0.3-0.9), domain, and source: session-observation; followed by a markdown body with '## Action' and '## Evidence' sections. Output ONLY the instinct markdown — no preamble, no code fences. Do NOT attempt to write any files. If there is no clear repeated pattern, output nothing. Be conservative." \
           2>> "$LOG_FILE"); then
+          rm -f "$sample_file"
           echo "[$(date)] Analysis run failed; keeping observations for retry." >> "$LOG_FILE"
           return 0
         fi
+        rm -f "$sample_file"
 
         # Only persist output that looks like an instinct (has frontmatter)
         if [ -n "$analysis_output" ] && printf '%s\n' "$analysis_output" | grep -q '^---'; then
@@ -126,8 +136,12 @@ case "${1:-start}" in
       # Handle SIGUSR1 for on-demand analysis
       trap 'analyze_observations' USR1
 
-      echo "$$" > "$PID_FILE"
-      echo "[$(date)] Observer started (PID: $$, threshold: $MIN_OBS observations)" >> "$LOG_FILE"
+      # Record the SUBSHELL's own PID ($BASHPID), not the parent script's
+      # ($$). The parent exits right after launching this loop, so writing $$
+      # would leave the PID file pointing at a dead process — breaking
+      # stop/status/USR1 and letting orphaned loops accumulate.
+      echo "$BASHPID" > "$PID_FILE"
+      echo "[$(date)] Observer started (PID: $BASHPID, threshold: $MIN_OBS observations)" >> "$LOG_FILE"
 
       while true; do
         # Check every 5 minutes. Run sleep in the background and `wait` on it
