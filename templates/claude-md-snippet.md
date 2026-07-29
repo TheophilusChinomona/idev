@@ -14,7 +14,7 @@ New to this repo? Run `/idev:explain-codebase` (codebase-explainer skill) to gen
 3. Trust but verify: confirm a cache hit with a live Grep before acting on it; if stale, refresh via the cache-refresh skill.
 
 ### Feature workflow (chain these idev skills)
-check lessons-learned → load backend/frontend-patterns cache (match existing conventions, never impose generic style) → implement → post-creation-verify (wiring/registrations) → build-check (once per change set) → api-contract-validation (if FE↔BE surface changed) → feature-completeness (trace UI→service→endpoint→DB) → browser-test for UI flows (real Playwright run, save the script) → self-review → update task-journal + session-resume → cache-refresh if structure changed.
+check lessons-learned → load backend/frontend-patterns cache → implement → post-creation-verify → build-check → api-contract-validation (if FE↔BE surface changed) → feature-completeness → browse for quick interactive QA → browser-test for durable E2E scripts → self-review → update task-journal + session-resume → cache-refresh if structure changed.
 
 ### Delegation map (idev agents)
 | Need | Agent |
@@ -22,7 +22,8 @@ check lessons-learned → load backend/frontend-patterns cache (match existing c
 | step-by-step plan for a task | planner |
 | system/schema/API design spec | backend-architect |
 | UI implementation | frontend-developer |
-| real-browser verification + report | browser-tester |
+| quick interactive browser QA (xd://browser) | browser-qa |
+| durable E2E scripts + test report | browser-tester |
 | general diff/PR review | code-reviewer |
 | security-only audit | security-reviewer |
 | dead-code removal | refactor-cleaner |

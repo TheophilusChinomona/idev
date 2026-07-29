@@ -125,23 +125,27 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (19)
-`/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
-`/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
-`/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
-`/idev:browse` — open an interactive browser QA session via xd://browser; snapshot, ref-based interaction, screenshots. No script needed.
-`/idev:sync-branch` — merge the team base branch into the current feature branch before a PR; conflict resolution + verification + report.
-`/idev:upgrade` — reconcile a project's `.claude/idev/` state with the installed plugin version after updates (missing dirs/config keys, stale CLAUDE.md snippet and git hooks).
-`/idev:update` — update the idev plugin itself to the latest version from GitHub; pulls code, reinstalls, and runs upgrade.
-`/idev:skillopt` — benchmark and optimize any skill using Microsoft SkillOpt; generates scenarios, runs evaluation via Codex, reports results.
-`/idev:review-pr` — fetch and review a PR (Azure DevOps or GitHub) with the code-reviewer agent; optional `--security` pass.
-`/idev:explain-codebase` — turn a repo into an onboarding playlist: analysis docs plus NotebookLM explainer videos (overview + per-subsystem); mandatory doc-review checkpoint; resumable build loop respecting daily limits.
-`/idev:context [dev|review|research]` — switch between development modes (dev, review, research) by loading the appropriate context.
+### Commands (20)
+`/idev:hooks` — manage optional hooks and team git hooks (status/enable/disable/install-git-hooks).
+`/idev:benchmark-skills` — static quality scorecard for every skill; CI enforces all checks via `--strict`.
+`/idev:browser-test` — verify a feature or flow with a real Playwright run; report with screenshot/console evidence.
+`/idev:browse` — open interactive browser QA via xd://browser; snapshot, ref interaction, screenshots.
+`/idev:sync-branch` — merge base branch into feature branch before a PR; conflict resolution + verification.
+`/idev:upgrade` — reconcile project `.claude/idev/` state with installed plugin version.
+`/idev:update` — update the idev plugin from GitHub; pulls code, reinstalls, runs upgrade.
+`/idev:skillopt` — benchmark and optimize a skill using Microsoft SkillOpt via Codex.
+`/idev:review-pr` — fetch and review a PR with the code-reviewer agent; optional `--security` pass.
+`/idev:explain-codebase` — turn a repo into an onboarding playlist with analysis docs and NotebookLM videos.
+`/idev:context [dev|review|research]` — switch development modes by loading the appropriate context.
 `/idev:eval define|check|report <feature>` — manage capability and regression evals with pass@k metrics.
-`/idev:test-coverage [--threshold N]` — measure and report test coverage for the project.
-`/idev:update-docs [--check]` — synchronize documentation with current code state.
-`/idev:orchestrate <workflow> <task>` — chain agents in sequence for complex workflows (feature, bugfix, refactor, security).
-`/idev:complete-ticket <ticket-id>` — generate a ticket completion report: test steps, expected vs actual, DevOps commit link.
+`/idev:test-coverage [--threshold N]` — measure and report test coverage.
+`/idev:update-docs [--check]` — synchronize documentation with current code.
+`/idev:orchestrate <workflow> <task>` — chain agents in sequence (feature, bugfix, refactor, security).
+`/idev:complete-ticket <ticket-id>` — generate ticket completion report with test steps and DevOps link.
+`/idev:evolve` — cluster related instincts into reusable skills or commands.
+`/idev:instinct-status` — show learned instincts with confidence levels, grouped by domain.
+`/idev:instinct-export [--domain <name>]` — export learned instincts to a shareable file.
+`/idev:instinct-import <file-or-url>` — import instincts from a teammate's export.
 
 ### Git platform support
 
