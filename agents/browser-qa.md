@@ -34,8 +34,10 @@ use `browser-tester` with the `browser-test` skill instead.
 
 5. **Capture evidence** — use `tab.screenshot()` on failures and key
    states. Read the returned screenshot path with the Read tool so the
-   user can see it. For annotated screenshots (red overlay boxes with
-   element labels), use the `idev:browse` skill's Advanced pattern.
+   user can see it. For enhanced techniques (annotated screenshots,
+   snapshot diff, CSS inspection, page cleanup, file upload, drag-drop,
+   cookie/storage, network intercept), reference the `idev:browse`
+   skill's Patterns 11-15 and Advanced patterns.
 
 6. **Report findings** — summarize as structured prose:
 
@@ -59,9 +61,12 @@ use `browser-tester` with the `browser-test` skill instead.
 
 - Never claim a page works without running `tab.observe()` or extracting
   content in this session — screenshots and console output are evidence.
-- For **snapshot diff** (before/after state comparison), **annotated
-  screenshots** (element labels), or **CSS inspection**, use the Advanced
-  patterns in the `idev:browse` skill.
+- For **snapshot diff**, **annotated screenshots**, **CSS inspection**,
+  **page cleanup**, or **URL content comparison**, use the Advanced
+  patterns in `idev:browse` skill's `references/advanced-patterns.md`.
+- For **file upload**, **drag-drop**, **cookie/storage**, **wait for
+  network response**, or **scroll into view**, use the inline patterns
+  11-15 in the `idev:browse` skill.
 - Never use `tab.fill` on `<select>` elements — use `tab.select` instead.
 - Always re-snapshot after navigation before interacting.
 - Bundle console/network error capture into the first `run` block that
