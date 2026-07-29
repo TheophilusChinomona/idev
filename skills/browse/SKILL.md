@@ -50,7 +50,6 @@ flowchart LR
 ---
 
 ## Pattern 1: Basic page verification
-
 ```
 # 1. Open a tab
 xd://browser { "action": "open", "url": "https://app.com/login" }
@@ -62,7 +61,6 @@ xd://browser { "action": "run", "name": "main", "code": "tab.observe()" }
 xd://browser { "action": "run", "name": "main",
   "code": "const errs=[]; page.on('console',m=>m.type()==='error'&&errs.push(m.text())); page.on('requestfailed',r=>errs.push('NET: '+r.url())); await tab.goto('https://app.com/login'); errs" }
 ```
-
 ## Pattern 2: Snapshot + interact by @ref
 
 Works like gstack browse's `$B snapshot -i` then `$B click @e3`:
@@ -85,7 +83,6 @@ xd://browser { "action": "run", "name": "main",
 
 **Ref lifecycle**: Refs (@e1, @e2...) are page-scoped and change on
 navigation or DOM mutations. Re-observe after every navigation.
-
 ## Pattern 3: Form fill and submit
 
 ```
@@ -97,7 +94,6 @@ xd://browser { "action": "run", "name": "main", "code": "
   tab.extract('#result')
 " }
 ```
-
 ## Pattern 4: Screenshot evidence
 
 ```

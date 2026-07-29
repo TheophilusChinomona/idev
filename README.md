@@ -91,19 +91,19 @@ The instinct subsystem learns reusable habits from your sessions, stored globall
 Delete any cache and the owning skill regenerates it on next use; `.claude/idev/` is safe to gitignore or commit, whichever your team prefers (committing shares warm caches).
 
 ## Components
-### Skills (31 active + 5 deprecated)
+### Skills (33 active + 5 deprecated)
 | Group | Active Skills |
 |-------|---------------|
 | Context | smart-context, project-map, function-extract, strategic-compact, context-switching |
 | Patterns | backend-patterns, frontend-patterns, coding-standards, commit-style, branch-sync |
-| Verification | build-check (includes test mapping), api-contract-validation, feature-completeness, self-review, browser-test, pre-ship-verify, skillopt, tdd-workflow, eval-harness, test-coverage |
+| Verification | build-check (includes test mapping), api-contract-validation, feature-completeness, self-review, browser-test, browse, pre-ship-verify, skillopt, tdd-workflow, eval-harness, test-coverage |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning, continuous-learning |
 | Maintenance | cache-refresh, auto-approve-policy, idev-init, skill-benchmark, env-preflight, db-preflight |
 | Onboarding | codebase-explainer |
 
 **Deprecated** (retained for backwards compatibility): architecture-scanner, file-index, import-graph, test-map, post-creation-verify
 
-### Agents (15)
+### Agents (16)
 | Agent | Role |
 |-------|------|
 | planner | read-only implementation planning for a specific task |
@@ -113,6 +113,7 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 | security-reviewer | security-only deep audit (read-only) |
 | refactor-cleaner | dead-code removal honoring project never-remove rules |
 | onboarding-guide | facts-only codebase orientation and execution-path tracing (read-only) |
+| browser-qa | interactive browser QA via xd://browser — snapshot, interact by @ref, screenshot, console checks. Quick verification without writing scripts |
 | browser-tester | code-as-action browser verification: writes/runs Playwright scripts, reports with screenshot + console evidence |
 | branch-syncer | merges the base branch into the feature branch before a PR; evidence-based conflict resolution + build/test verification |
 | skill-optimizer | runs SkillOpt benchmarks on a skill, analyzes failures, proposes improvements |
@@ -124,10 +125,11 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (18)
+### Commands (19)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
+`/idev:browse` — open an interactive browser QA session via xd://browser; snapshot, ref-based interaction, screenshots. No script needed.
 `/idev:sync-branch` — merge the team base branch into the current feature branch before a PR; conflict resolution + verification + report.
 `/idev:upgrade` — reconcile a project's `.claude/idev/` state with the installed plugin version after updates (missing dirs/config keys, stale CLAUDE.md snippet and git hooks).
 `/idev:update` — update the idev plugin itself to the latest version from GitHub; pulls code, reinstalls, and runs upgrade.
