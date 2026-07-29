@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 26 skills, 9 agents, 12 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics. Includes SkillOpt integration for benchmarking and optimizing skills. Five older skills (architecture-scanner, file-index, import-graph, test-map, post-creation-verify) are deprecated and retained for backwards compatibility only.
+A Claude Code plugin packaging 26 skills, 12 agents, 12 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics. Includes SkillOpt integration for benchmarking and optimizing skills. Five older skills (architecture-scanner, file-index, import-graph, test-map, post-creation-verify) are deprecated and retained for backwards compatibility only.
 
 ## Install & Setup
 
@@ -103,7 +103,7 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 **Deprecated** (retained for backwards compatibility): architecture-scanner, file-index, import-graph, test-map, post-creation-verify
 
-### Agents (7)
+### Agents (9)
 | Agent | Role |
 |-------|------|
 | planner | read-only implementation planning for a specific task |
@@ -115,6 +115,9 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 | onboarding-guide | facts-only codebase orientation and execution-path tracing (read-only) |
 | browser-tester | code-as-action browser verification: writes/runs Playwright scripts, reports with screenshot + console evidence |
 | branch-syncer | merges the base branch into the feature branch before a PR; evidence-based conflict resolution + build/test verification |
+| skill-optimizer | runs SkillOpt benchmarks on a skill, analyzes failures, proposes improvements |
+| benchmark-runner | executes SkillOpt evals across multiple skills, produces comparative scorecard |
+| db-migration-auditor | scans DBScripts, checks applied status, reports missing migrations |
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
