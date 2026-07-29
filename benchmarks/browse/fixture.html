@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Browse Test Fixture</title>
+<style>
+  body { font-family: system-ui; max-width: 640px; margin: 2rem auto; }
+  input, button, select { display: block; margin: 0.5rem 0; padding: 0.5rem; }
+  .hidden { display: none; }
+  #result { margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+  <h1>Test Page</h1>
+  <input id="name" type="text" placeholder="Enter name" aria-label="Name">
+  <select id="color" aria-label="Color">
+    <option value="red">Red</option>
+    <option value="green">Green</option>
+    <option value="blue">Blue</option>
+  </select>
+  <button id="submit" aria-label="Submit">Submit</button>
+  <div id="result" class="hidden">Result will appear here</div>
+  <script>
+    document.getElementById('submit')?.addEventListener('click', () => {
+      const name = document.getElementById('name')?.value || 'World';
+      const color = document.getElementById('color')?.value || 'blue';
+      const el = document.getElementById('result');
+      if (el) {
+        el.textContent = `Hello ${name}! Color: ${color}`;
+        el.className = '';
+        el.style.color = color;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -24,3 +24,4 @@ docs/onboarding/
 
 # SkillOpt evaluation outputs (local artifacts)
 outputs/
+.gstack/
