@@ -19,7 +19,20 @@ This skill is ALWAYS ACTIVE. Apply these rules to every task.
 
 ## Generating the index
 
-If `index.json` is missing (e.g. the session-start hook reports no index), generate it by running the scanner from the project root:
+**Step 0: Ensure project-map exists.** The project map is the data source
+for the index. If `.claude/idev/project-map/project.map.md` is missing or
+severely stale (>30 days), generate it first:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/project-map/ai_map_updater.py"
+```
+
+This auto-detects split vs unified projects and writes the map. Only takes
+a few seconds and only runs when needed (missing or stale).
+
+**Step 1: Generate the index.** If `index.json` is missing (e.g. the
+session-start hook reports no index), generate it by running the scanner
+from the project root:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/smart-context/scanner.py"
