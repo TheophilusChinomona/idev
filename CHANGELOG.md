@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.14.0 — 2026-07-29
+
+### Added
+- Memory persistence hooks: auto-save on session end, pre-compact
+- Contexts: dev, review, research modes with /idev:context command
+- Rules directory: modular security, testing, git, style, performance rules
+- Continuous learning: auto-extract patterns from sessions
+- Eval harness: capability/regression evals with pass@k metrics
+- TDD workflow: skill + agent for test-driven development
+- Build error resolver agent: auto-fixes build errors with minimal diffs
+- Doc updater agent: keeps docs in sync with code
+- Orchestrate command: agent workflow chaining
+- Test coverage: /idev:test-coverage command
+
+### Changed
+- Session-start hook: now loads context files
+- Stop hook: now saves memory + extracts patterns
+
 ## 0.13.0 — 2026-07-29
 
 ### Added
