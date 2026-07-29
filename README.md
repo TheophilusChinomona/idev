@@ -103,7 +103,7 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 **Deprecated** (retained for backwards compatibility): architecture-scanner, file-index, import-graph, test-map, post-creation-verify
 
-### Agents (9)
+### Agents (12)
 | Agent | Role |
 |-------|------|
 | planner | read-only implementation planning for a specific task |
