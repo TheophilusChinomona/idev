@@ -51,30 +51,26 @@ flowchart LR
 ```
 # 1. Open a tab
 xd://browser { "action": "open", "url": "https://app.com/login" }
-
-# 2. Snapshot — accessibility tree with element refs
+# 2. Snapshot
 xd://browser { "action": "run", "name": "main", "code": "tab.observe()" }
-
-# 3. Console & network — check for errors
+# 3. Console & network errors
 xd://browser { "action": "run", "name": "main",
   "code": "const errs=[]; page.on('console',m=>m.type()==='error'&&errs.push(m.text())); page.on('requestfailed',r=>errs.push('NET: '+r.url())); await tab.goto('https://app.com/login'); errs" }
 ```
 
 ## Pattern 2: Snapshot + interact by @ref
 ```
-# 1. Snapshot → get accessibility tree
+# Snapshot → ARIA tree with refs
 xd://browser { "action": "run", "name": "main",
   "code": "tab.ariaSnapshot()" }
-
-# 2. Interact by ref
+# Interact — refs work as aria-ref=eN selectors
 xd://browser { "action": "run", "name": "main",
   "code": "await tab.fill('aria-ref=e2', 'user@test.com'); await tab.click('aria-ref=e5'); tab.screenshot()" }
-
-# 3. Verify result
+# Re-snapshot to verify
 xd://browser { "action": "run", "name": "main",
   "code": "tab.observe()" }
 ```
-Refs (@e1, @e2...) are page-scoped. Re-observe after every navigation.
+Refs invalidate on navigation — re-observe after every `goto`.
 
 ## Pattern 3: Form fill and submit
 ```
@@ -89,14 +85,14 @@ xd://browser { "action": "run", "name": "main", "code": "
 
 ## Pattern 4: Screenshot evidence
 ```
-# Full page
+# Full page (returns path in response)
 xd://browser { "action": "run", "name": "main",
   "code": "tab.screenshot()" }
 # Element only
 xd://browser { "action": "run", "name": "main",
   "code": "tab.screenshot({ selector: '.dashboard' })" }
 ```
-Screenshot paths print in the response. Use the Read tool to display.
+Use the Read tool to display the returned PNG path.
 
 ## Pattern 5: Dialog handling
 ```
@@ -130,8 +126,7 @@ xd://browser { "action": "open", "url": "...",
 ```
 xd://browser { "action": "run", "name": "main", "code": "
   const result = await tab.evaluate(() => ({
-    title: document.title,
-    url: location.href
+    title: document.title, url: location.href
   }));
   result
 " }
@@ -141,10 +136,9 @@ xd://browser { "action": "run", "name": "main", "code": "
 ```
 # Element appears
 xd://browser { "action": "run", "name": "main", "code": "
-  await tab.waitForSelector('.toast-success', { timeout: 5000 });
-  'found it'
+  await tab.waitForSelector('.toast-success', { timeout: 5000 }); 'found it'
 " }
-# URL change
+# URL changes after click
 xd://browser { "action": "run", "name": "main", "code": "
   await tab.click('button');
   await tab.waitForUrl('**/dashboard');
@@ -156,21 +150,21 @@ xd://browser { "action": "run", "name": "main", "code": "
 ```
 # 1. Open
 xd://browser { "action": "open", "url": "https://app.com/login", "name": "main" }
-# 2. Check console + observe
+# 2. Console errors + observe
 xd://browser { "action": "run", "name": "main", "code": "
   const errs = [];
   page.on('console', m => m.type() === 'error' && errs.push(m.text()));
   page.on('requestfailed', r => errs.push('NET '+r.url()));
   tab.observe()
 " }
-# 3. Fill form and submit
+# 3. Fill + submit + screenshot
 xd://browser { "action": "run", "name": "main", "code": "
   await tab.fill('aria-ref=e1', 'user@test.com');
   await tab.fill('aria-ref=e2', 'password123');
   await tab.click('aria-ref=e3');
   tab.screenshot()
 " }
-# 4. Verify
+# 4. Verify result
 xd://browser { "action": "run", "name": "main", "code": "
   { url: page.url(), heading: await tab.extract('h1'), screenshot: await tab.screenshot() }
 " }
@@ -180,49 +174,11 @@ xd://browser { "action": "close", "name": "main" }
 
 ## Advanced patterns
 
-```
-# Before/after diff — snapshot state comparison
-xd://browser { "action": "run", "name": "main",
-  "code": "const b=await tab.extract('body'); await tab.click('#btn');"+
-    "const a=await tab.extract('body'); {b:b.slice(0,200), a:a.slice(0,200)}" }
+For snapshot diff, annotated screenshots, CSS inspection, page cleanup,
+and URL content comparison, load:
 
-# Annotated screenshot — red overlay boxes with element labels
-xd://browser { "action": "run", "name": "main", "code": "
-  const o = Object.assign(document.createElement('div'),
-    {style:'position:fixed;inset:0;pointer-events:none;z-index:99999'});
-  document.body.appendChild(o);
-  document.querySelectorAll('button,a,input,select').forEach((e,i) => {
-    const r = e.getBoundingClientRect();
-    const b = Object.assign(document.createElement('div'),
-      {style:'position:absolute;border:2px solid red;background:rgba(255,0,0,0.08)'});
-    Object.assign(b.style, {left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
-    const l = Object.assign(document.createElement('span'), {textContent:'@e'+(i+1)});
-    l.style.cssText = 'position:absolute;top:-16px;left:0;background:red;color:#fff;font:10px monospace;padding:1px 3px';
-    b.appendChild(l); o.appendChild(b);
-  });
-  const p = await tab.screenshot({ silent: true }); o.remove(); p
-" }
-
-# CSS inspection — computed styles
-xd://browser { "action": "run", "name": "main",
-  "code": "tab.evaluate(() => { const el=document.querySelector('.el');"+
-    "if(!el)return; const cs=getComputedStyle(el);"+
-    "return ['color','background-color','font-size','display','margin','padding',"+
-    "'border','opacity'].reduce((o,k)=>{o[k]=cs.getPropertyValue(k);return o;},{}) })" }
-
-# Page cleanup — remove sticky banners, cookie notices
-xd://browser { "action": "run", "name": "main", "code": "
-  document.querySelectorAll('div[class*=\"cookie\"],div[class*=\"banner\"],"+
-    'div[class*=\"sticky\"],div[class*=\"consent\"],div[id*=\"cookie\"]').forEach(e => e.remove());
-  document.querySelectorAll('header,footer').forEach(e => e.style.position='static');
-  'cleaned'
-" }
-
-# URL content diff — compare two pages by extracting text
-xd://browser { "action": "run", "name": "main",
-  "code": "const r1=await(await fetch(url1)).text();"+
-    "const r2=await(await fetch(url2)).text();"+
-    "{len1:r1.length,len2:r2.length,same:r1===r2}" }
+```md
+${CLAUDE_PLUGIN_ROOT}/skills/browse/references/advanced-patterns.md
 ```
 
 ## Reference: xd://browser API map
