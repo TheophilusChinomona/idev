@@ -61,14 +61,12 @@ xd://browser { "action": "run", "name": "main",
 ## Pattern 2: Snapshot + interact by @ref
 ```
 # Snapshot → ARIA tree with refs
-xd://browser { "action": "run", "name": "main",
-  "code": "tab.ariaSnapshot()" }
+xd://browser { "action": "run", "name": "main", "code": "tab.ariaSnapshot()" }
 # Interact — refs work as aria-ref=eN selectors
 xd://browser { "action": "run", "name": "main",
   "code": "await tab.fill('aria-ref=e2', 'user@test.com'); await tab.click('aria-ref=e5'); tab.screenshot()" }
 # Re-snapshot to verify
-xd://browser { "action": "run", "name": "main",
-  "code": "tab.observe()" }
+xd://browser { "action": "run", "name": "main", "code": "tab.observe()" }
 ```
 Refs invalidate on navigation — re-observe after every `goto`.
 
@@ -170,6 +168,44 @@ xd://browser { "action": "run", "name": "main", "code": "
 " }
 # 5. Close
 xd://browser { "action": "close", "name": "main" }
+```
+
+## Pattern 11: File upload
+```
+xd://browser { "action": "run", "name": "main",
+  "code": "await tab.uploadFile('input[type=file]', '/path/to/file.pdf'); 'uploaded'" }
+```
+
+## Pattern 12: Drag and drop
+```
+xd://browser { "action": "run", "name": "main",
+  "code": "await tab.drag('#source', '#target'); 'dragged'" }
+```
+
+## Pattern 13: Cookie and storage manipulation
+```
+# Set/get/clear cookies via evaluate
+xd://browser { "action": "run", "name": "main",
+  "code": "tab.evaluate(() => { document.cookie='session=abc123;path=/';"+
+    "localStorage.setItem('pref','dark');"+
+    "return {cookies:document.cookie,storage:{...localStorage}} })" }
+```
+
+## Pattern 14: Wait for network response
+```
+xd://browser { "action": "run", "name": "main", "code": "
+  const [resp] = await Promise.all([
+    tab.waitForResponse(r => r.url().includes('/api/submit')),
+    tab.click('#submit-btn')
+  ]);
+  { status: resp.status(), url: resp.url(), ok: resp.ok() }
+" }
+```
+
+## Pattern 15: Scroll element into view
+```
+xd://browser { "action": "run", "name": "main",
+  "code": "await tab.scrollIntoView('#footer'); 'scrolled'" }
 ```
 
 ## Advanced patterns
