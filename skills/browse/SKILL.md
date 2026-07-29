@@ -214,8 +214,40 @@ xd://browser { "action": "close", "name": "main" }
 
 ---
 
-## Reference: xd://browser API map
+## Advanced: Snapshot diff, annotation, CSS
 
+```
+# Before/after diff — extract text before and after an action
+xd://browser { "action": "run", "name": "main",
+  "code": "const b=await tab.extract('body'); await tab.click('#btn');"+
+    "const a=await tab.extract('body'); {b:b.slice(0,200), a:a.slice(0,200)}" }
+
+# Annotated screenshot — draw red boxes around interactive elements
+xd://browser { "action": "run", "name": "main", "code": "
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99999';
+  document.body.appendChild(el);
+  document.querySelectorAll('button,a,input,select').forEach((e,i) => {
+    const r = e.getBoundingClientRect();
+    const b = document.createElement('div');
+    b.style.cssText = 'position:absolute;border:2px solid red;background:rgba(255,0,0,0.08)';
+    Object.assign(b.style, {left:r.left+'px', top:r.top+'px', width:r.width+'px', height:r.height+'px'});
+    const l = Object.assign(document.createElement('span'), {textContent:'@e'+(i+1)});
+    l.style.cssText = 'position:absolute;top:-16px;left:0;background:red;color:#fff;font:10px monospace;padding:1px 3px';
+    b.appendChild(l); el.appendChild(b);
+  });
+  const p = await tab.screenshot({ silent: true }); el.remove(); p
+" }
+
+# CSS inspection — computed styles via evaluate
+xd://browser { "action": "run", "name": "main",
+  "code": "tab.evaluate(() => { const el=document.querySelector('.el');"+
+    "if(!el)return; const cs=getComputedStyle(el);"+
+    "return ['color','background-color','font-size','display','margin','padding',"+
+    "'border','opacity'].reduce((o,k)=>{o[k]=cs.getPropertyValue(k);return o;},{}) })" }
+```
+
+## Reference: xd://browser API map
 | gstack browse | xd://browser equivalent |
 |---|---|
 | `$B goto url` | `open` with `url` |
