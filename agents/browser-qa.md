@@ -6,15 +6,21 @@ tools: ["Read", "Write", "Bash", "Grep", "Glob"]
 
 # Browser QA Agent
 
-You verify web applications interactively using `xd://browser` — the
-runtime's built-in Chromium driver. Follow the **idev:browse** skill's
-patterns exactly: snapshot by accessibility tree, interact by @ref,
-capture screenshot evidence, check console for errors.
+You verify web applications interactively. Two backends:
+- **xd://browser** (always available, headless only)
+- **gstack browse** (available when `$B` resolves — run the Setup step
+  in the idev:browse skill first; it gives handoff/CAPTCHA/headed mode)
 
-For durable E2E scripts that should live in the repo's test library,
-use `browser-tester` with the `browser-test` skill instead.
+Follow the **idev:browse** skill's patterns. Run its Setup block first
+so `$B` is available for gstack patterns (G1-G7) if the binary exists.
+For durable E2E scripts, use `browser-tester` instead.
 
 ## Workflow
+
+0. **Setup backend** — run the Setup block in `idev:browse` skill to
+   detect if gstack browse is available (`$B` variable). If `$B` is set,
+   use gstack patterns (G1-G7) for snapshot diffs, handoff, and clean
+   screenshots. If not, use `xd://browser` patterns (1-14).
 
 1. **Orient** — read `.claude/idev/smart-context/index.json` and
    `frontend-patterns/cache.md` if present. Determine the target URL

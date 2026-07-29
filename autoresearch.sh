@@ -102,8 +102,8 @@ if [ "$GSTACK_LINES" -gt 0 ] && [ "$IDEV_BROWSE_LINES" -gt 0 ]; then
 fi
 
 # Count QA patterns in each skill
-# idev browse: count Pattern N headers + Advanced section header
-IDEV_BROWSE_PATTERNS=$(grep -cE "^## Pattern [0-9]|^## Advanced" "$IDEV_BROWSE" 2>/dev/null || echo 0)
+# idev browse: count pattern sections + Advanced
+IDEV_BROWSE_PATTERNS=$(grep -cE "^### Pattern [0-9]|^### Pattern G[0-9]|^## Advanced" "$IDEV_BROWSE" 2>/dev/null || echo 0)
 # gstack: count the actual QA workflow and techniques sections (not preamble)
 GSTACK_PATTERNS=$(grep -cE "^## Core QA Patterns|^### [0-9]|^## Puppeteer|^## CSS Inspector|^## User Handoff|^## Snapshot Flags" "$GSTACK_SKILL" 2>/dev/null || echo 0)
 
