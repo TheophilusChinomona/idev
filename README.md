@@ -125,7 +125,8 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (20)
+### Commands (21)
+`/idev:erp-login [ticket-id]` — log into the production ERP and navigate to a ticket (sources credentials from .env.erp).
 `/idev:hooks` — manage optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; report with screenshot/console evidence.

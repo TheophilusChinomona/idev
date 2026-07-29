@@ -17,9 +17,24 @@ first of developer/develop/main/master on origin).
    and a pointer to follow the idev:branch-sync skill.
 2. Relay the agent's sync report verbatim — commits merged, per-conflict
    resolutions, verification results, rollback point, PR readiness.
-3. If the agent escalated ambiguous conflicts, walk the user through each
+3. After syncing, **generate the PR title and description** by reading the
+   commit log and diff:
+   ```bash
+   git log origin/<base>..HEAD --oneline --first-parent
+   git log origin/<base>..HEAD --format="%B"
+   ```
+   Then present:
+   ```
+   Proposed PR: <feature-branch> → <base>
+   
+   Title: <generated title per commit-style conventions>
+   
+   Description:
+   <generated description with commit list and summary>
+   ```
+4. If the agent escalated ambiguous conflicts, walk the user through each
    decision before resuming.
-4. On SYNCED: offer to create the PR targeting the base branch — only on
+5. On SYNCED: offer to create the PR targeting the base branch — only on
    explicit yes. Use the platform from project config / origin URL:
    `az repos pr create` for Azure DevOps remotes, `gh pr create` for
    GitHub. Title and description per the commit-style skill's PR format.

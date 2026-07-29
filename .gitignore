@@ -25,3 +25,7 @@ docs/onboarding/
 # SkillOpt evaluation outputs (local artifacts)
 outputs/
 .gstack/
+
+# ERP credentials (local, never committed)
+.env*
+!.env.example

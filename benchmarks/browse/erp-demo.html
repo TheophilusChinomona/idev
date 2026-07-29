@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Speccon ERP — Dev</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: system-ui; background:#f0f2f5; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  .card { background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1); padding:2rem; width:400px; }
+  h1 { font-size:1.25rem; margin-bottom:1.5rem; color:#1a1a2e; }
+  label { display:block; font-size:.875rem; font-weight:500; margin-bottom:.25rem; color:#374151; }
+  input { width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:6px; margin-bottom:1rem; }
+  button { width:100%; padding:.5rem 1rem; background:#2563eb; color:#fff; border:none; border-radius:6px; font-weight:500; cursor:pointer; }
+  button:hover { background:#1d4ed8; }
+  .error { color:#dc2626; font-size:.875rem; margin-top:.5rem; display:none; }
+  #ticket-view { display:none; }
+  table { width:100%; border-collapse:collapse; margin-top:1rem; }
+  th, td { text-align:left; padding:.5rem .75rem; border-bottom:1px solid #e5e7eb; font-size:.875rem; }
+  th { color:#6b7280; font-weight:500; }
+  .status-pass { color:#059669; font-weight:600; }
+  .status-fail { color:#dc2626; font-weight:600; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:.75rem; font-weight:500; }
+  .badge-open { background:#fef3c7; color:#92400e; }
+  .badge-closed { background:#d1fae5; color:#065f46; }
+  .badge-in-progress { background:#dbeafe; color:#1e40af; }
+  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+  .header .user { font-size:.875rem; color:#6b7280; }
+  .logout { font-size:.875rem; color:#2563eb; cursor:pointer; }
+  .logout:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="card" id="login-form">
+  <h1>Speccon ERP — Dev</h1>
+  <label for="email">Email</label>
+  <input id="email" type="email" placeholder="you@speccon.co.za" aria-label="Email">
+  <label for="password">Password</label>
+  <input id="password" type="password" placeholder="••••••••" aria-label="Password">
+  <button id="login-btn">Sign in</button>
+  <div class="error" id="login-error">Invalid credentials</div>
+</div>
+
+<div class="card" id="ticket-view">
+  <div class="header">
+    <h1 id="ticket-title">PROJ-1234 — Fix invoice PDF generation</h1>
+    <div class="user">Signed in as <span id="user-email">theo@speccon.co.za</span></div>
+    <span class="logout" id="logout-btn">Sign out</span>
+  </div>
+
+  <div style="margin-bottom:1rem;padding:.75rem;background:#f8fafc;border-radius:6px;font-size:.875rem">
+    <strong>Reporter:</strong> Hein<br>
+    <strong>Assignee:</strong> Theo<br>
+    <strong>Status:</strong> <span class="badge badge-open">In Progress</span><br>
+    <strong>Description:</strong> Invoice PDF shows "null" for client name when company field is empty.<br>
+    <strong>Fix branch:</strong> <code>fix/invoice-null-company</code>
+  </div>
+
+  <h2 style="font-size:1rem;margin-bottom:.5rem">Test this fix</h2>
+  <button id="gen-invoice-btn" style="width:auto">Generate test invoice →</button>
+
+  <div id="invoice-result" style="display:none;margin-top:1rem;padding:.75rem;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;font-size:.875rem">
+    <strong>✅ Invoice generated</strong><br>
+    Client: Speccon (Pty) Ltd<br>
+    Amount: R 12,450.00<br>
+    PDF: <a href="#" id="pdf-link">invoice-2026-07-29.pdf</a>
+  </div>
+
+  <h2 style="font-size:1rem;margin:.75rem 0 .5rem">Test results</h2>
+  <table>
+    <tr><th>Check</th><th>Result</th><th>Evidence</th></tr>
+    <tr><td>Invoice PDF downloads</td><td class="status-pass">PASS</td><td><a href="#" class="evidence">screenshot.png</a></td></tr>
+    <tr><td>Client name renders correctly</td><td class="status-pass">PASS</td><td><a href="#" class="evidence">invoice-preview.png</a></td></tr>
+    <tr><td>Zero console errors</td><td class="status-fail">FAIL</td><td><a href="#" class="evidence">console-log.txt</a></td></tr>
+  </table>
+</div>
+
+<script>
+  const loginForm = document.getElementById('login-form');
+  const ticketView = document.getElementById('ticket-view');
+  const loginBtn = document.getElementById('login-btn');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const error = document.getElementById('login-error');
+  const genInvoice = document.getElementById('gen-invoice-btn');
+  const invoiceResult = document.getElementById('invoice-result');
+  const userEmail = document.getElementById('user-email');
+  const logoutBtn = document.getElementById('logout-btn');
+  const ticketTitle = document.getElementById('ticket-title');
+
+  loginBtn.addEventListener('click', () => {
+    if (email.value.includes('@') && password.value.length > 0) {
+      userEmail.textContent = email.value;
+      loginForm.style.display = 'none';
+      ticketView.style.display = 'block';
+      error.style.display = 'none';
+    } else {
+      error.style.display = 'block';
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    loginForm.style.display = 'block';
+    ticketView.style.display = 'none';
+    email.value = '';
+    password.value = '';
+    invoiceResult.style.display = 'none';
+  });
+
+  genInvoice.addEventListener('click', () => {
+    invoiceResult.style.display = 'block';
+    const link = document.getElementById('pdf-link');
+    link.textContent = 'invoice-2026-07-29.pdf';
+    console.log('InvoiceService: generated PDF for client Speccon (Pty) Ltd, amount R12,450.00');
+  });
+</script>
+</body>
+</html>
