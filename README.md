@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 26 skills, 12 agents, 12 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics. Includes SkillOpt integration for benchmarking and optimizing skills. Five older skills (architecture-scanner, file-index, import-graph, test-map, post-creation-verify) are deprecated and retained for backwards compatibility only.
+A Claude Code plugin packaging 31 skills, 15 agents, 18 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics. Includes SkillOpt integration for benchmarking and optimizing skills. Five older skills (architecture-scanner, file-index, import-graph, test-map, post-creation-verify) are deprecated and retained for backwards compatibility only.
 
 ## Install & Setup
 
@@ -91,19 +91,19 @@ The instinct subsystem learns reusable habits from your sessions, stored globall
 Delete any cache and the owning skill regenerates it on next use; `.claude/idev/` is safe to gitignore or commit, whichever your team prefers (committing shares warm caches).
 
 ## Components
-### Skills (26 active + 5 deprecated)
+### Skills (31 active + 5 deprecated)
 | Group | Active Skills |
 |-------|---------------|
-| Context | smart-context, project-map, function-extract, strategic-compact |
+| Context | smart-context, project-map, function-extract, strategic-compact, context-switching |
 | Patterns | backend-patterns, frontend-patterns, coding-standards, commit-style, branch-sync |
-| Verification | build-check (includes test mapping), api-contract-validation, feature-completeness, self-review, browser-test, pre-ship-verify, skillopt |
-| Memory | lessons-learned, task-journal, session-resume, auto-learning |
+| Verification | build-check (includes test mapping), api-contract-validation, feature-completeness, self-review, browser-test, pre-ship-verify, skillopt, tdd-workflow, eval-harness, test-coverage |
+| Memory | lessons-learned, task-journal, session-resume, auto-learning, continuous-learning |
 | Maintenance | cache-refresh, auto-approve-policy, idev-init, skill-benchmark, env-preflight, db-preflight |
 | Onboarding | codebase-explainer |
 
 **Deprecated** (retained for backwards compatibility): architecture-scanner, file-index, import-graph, test-map, post-creation-verify
 
-### Agents (12)
+### Agents (15)
 | Agent | Role |
 |-------|------|
 | planner | read-only implementation planning for a specific task |
@@ -118,10 +118,13 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 | skill-optimizer | runs SkillOpt benchmarks on a skill, analyzes failures, proposes improvements |
 | benchmark-runner | executes SkillOpt evals across multiple skills, produces comparative scorecard |
 | db-migration-auditor | scans DBScripts, checks applied status, reports missing migrations |
+| tdd-guide | test-driven development specialist — enforces write-tests-first workflow |
+| build-error-resolver | build and type error resolution — fixes errors with minimal diffs |
+| doc-updater | keeps documentation in sync with code changes |
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (12)
+### Commands (18)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
@@ -131,6 +134,12 @@ backend-architect, frontend-developer, code-reviewer, and onboarding-guide are a
 `/idev:skillopt` — benchmark and optimize any skill using Microsoft SkillOpt; generates scenarios, runs evaluation via Codex, reports results.
 `/idev:review-pr` — fetch and review a PR (Azure DevOps or GitHub) with the code-reviewer agent; optional `--security` pass.
 `/idev:explain-codebase` — turn a repo into an onboarding playlist: analysis docs plus NotebookLM explainer videos (overview + per-subsystem); mandatory doc-review checkpoint; resumable build loop respecting daily limits.
+`/idev:context [dev|review|research]` — switch between development modes (dev, review, research) by loading the appropriate context.
+`/idev:eval define|check|report <feature>` — manage capability and regression evals with pass@k metrics.
+`/idev:test-coverage [--threshold N]` — measure and report test coverage for the project.
+`/idev:update-docs [--check]` — synchronize documentation with current code state.
+`/idev:orchestrate <workflow> <task>` — chain agents in sequence for complex workflows (feature, bugfix, refactor, security).
+`/idev:complete-ticket <ticket-id>` — generate a ticket completion report: test steps, expected vs actual, DevOps commit link.
 
 ### Git platform support
 

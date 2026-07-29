@@ -14,6 +14,17 @@ Persist working context across sessions so Claude can resume exactly where it le
 
 ---
 
+## Auto-Save
+
+Session state is automatically saved at three points:
+1. **Session end** (Stop hook) — saves final state
+2. **Before compaction** (PreCompact hook) — saves before context is compressed
+3. **Manual** — user says "save session" or "save context"
+
+No user action required — the hooks handle persistence silently.
+
+---
+
 ## How It Works
 
 A lightweight session snapshot is saved to:
