@@ -13,25 +13,25 @@ scripts that should exist in the test library, use `browser-test` instead.
 
 ```
 # Open tab (one time, session persists)
-→ xd://browser { "action": "open", "url": "https://app.com", "name": "main" }
+xd://browser { "action": "open", "url": "https://app.com", "name": "main" }
 
 # Snapshot (accessibility tree with element refs)
-→ run code: "tab.observe()"
-→ run code: "tab.ariaSnapshot()"    // ARIA YAML with [ref=eN]
+run code: tab.observe()       # plain tree
+run code: tab.ariaSnapshot()  # ARIA YAML with [ref=eN]
 
 # Interact by element ref or selector
-→ run code: "tab.fill('aria-ref=e2', 'Alice')"
-→ run code: "tab.click('aria-ref=e5')"
-→ run code: "tab.select('#color', 'green')"
-→ run code: "tab.screenshot()"
+run code: tab.fill('aria-ref=e2', 'Alice')
+run code: tab.click('aria-ref=e5')
+run code: tab.select('#color', 'green')
+run code: tab.screenshot()
 
 # Read page content
-→ run code: "tab.extract('#result')"      // element text
-→ run code: "await tab.evaluate(() => document.title)"
+run code: tab.extract('#result')
+run code: await tab.evaluate(() => document.title)
 
 # Verify state
-→ run code: "await tab.waitForSelector('.dashboard')"
-→ run code: "tab.observe()"    // re-snapshot after interaction
+run code: await tab.waitForSelector('.dashboard')
+run code: tab.observe()       # re-snapshot after interaction
 ```
 
 ## Core Workflow
@@ -47,32 +47,26 @@ flowchart LR
   F --> G[Close tab]
 ```
 
----
-
 ## Pattern 1: Basic page verification
 ```
 # 1. Open a tab
 xd://browser { "action": "open", "url": "https://app.com/login" }
 
-# 2. Snapshot — get accessibility tree with element refs
+# 2. Snapshot — accessibility tree with element refs
 xd://browser { "action": "run", "name": "main", "code": "tab.observe()" }
 
 # 3. Console & network — check for errors
 xd://browser { "action": "run", "name": "main",
   "code": "const errs=[]; page.on('console',m=>m.type()==='error'&&errs.push(m.text())); page.on('requestfailed',r=>errs.push('NET: '+r.url())); await tab.goto('https://app.com/login'); errs" }
 ```
+
 ## Pattern 2: Snapshot + interact by @ref
-
-Works like gstack browse's `$B snapshot -i` then `$B click @e3`:
-
 ```
 # 1. Snapshot → get accessibility tree
 xd://browser { "action": "run", "name": "main",
   "code": "tab.ariaSnapshot()" }
-# Returns: - textbox "Email" [ref=e2]
-#          - button "Submit" [ref=e5]
 
-# 2. Interact by ref — refs work as selectors with "aria-ref=" prefix
+# 2. Interact by ref
 xd://browser { "action": "run", "name": "main",
   "code": "await tab.fill('aria-ref=e2', 'user@test.com'); await tab.click('aria-ref=e5'); tab.screenshot()" }
 
@@ -80,42 +74,35 @@ xd://browser { "action": "run", "name": "main",
 xd://browser { "action": "run", "name": "main",
   "code": "tab.observe()" }
 ```
+Refs (@e1, @e2...) are page-scoped. Re-observe after every navigation.
 
-**Ref lifecycle**: Refs (@e1, @e2...) are page-scoped and change on
-navigation or DOM mutations. Re-observe after every navigation.
 ## Pattern 3: Form fill and submit
-
 ```
 xd://browser { "action": "run", "name": "main", "code": "
-  await tab.fill('input[type=text], [contenteditable]', 'Alice');
+  await tab.fill('input[type=text]', 'Alice');
   await tab.select('select', 'green');
-  await tab.click('button, [type=submit]');
+  await tab.click('button');
   await tab.waitForSelector('#result');
   tab.extract('#result')
 " }
 ```
-## Pattern 4: Screenshot evidence
 
+## Pattern 4: Screenshot evidence
 ```
-# Full page screenshot (returns path)
+# Full page
 xd://browser { "action": "run", "name": "main",
   "code": "tab.screenshot()" }
-
-# Element screenshot
+# Element only
 xd://browser { "action": "run", "name": "main",
   "code": "tab.screenshot({ selector: '.dashboard' })" }
 ```
-
-Screenshot paths are printed in the response. The Read tool can display
-the PNG to the user.
+Screenshot paths print in the response. Use the Read tool to display.
 
 ## Pattern 5: Dialog handling
-
 ```
-# Auto-accept dialogs at open time
+# Auto-accept at open time
 xd://browser { "action": "open", "url": "...", "dialogs": "accept", "name": "main" }
-
-# Or per-run
+# Per-run listener
 xd://browser { "action": "run", "name": "main", "code": "
   page.on('dialog', d => d.accept());
   await tab.click('#delete-btn');
@@ -123,54 +110,41 @@ xd://browser { "action": "run", "name": "main", "code": "
 ```
 
 ## Pattern 6: Multi-tab testing
-
 ```
 # Open two tabs
-xd://browser { "action": "open", "url": "https://app.com/page1", "name": "tab1" }
-xd://browser { "action": "open", "url": "https://app.com/page2", "name": "tab2" }
-
+xd://browser { "action": "open", "url": "https://app.com/a", "name": "tab1" }
+xd://browser { "action": "open", "url": "https://app.com/b", "name": "tab2" }
 # Switch by name
 xd://browser { "action": "run", "name": "tab1", "code": "tab.observe()" }
-xd://browser { "action": "run", "name": "tab2", "code": "tab.observe()" }
-
-# Close tab
+# Close
 xd://browser { "action": "close", "name": "tab1" }
 ```
 
 ## Pattern 7: Viewport/responsive
-
 ```
-# Set viewport at open time
 xd://browser { "action": "open", "url": "...",
-  "viewport": { "width": 375, "height": 812 },
-  "name": "mobile" }
+  "viewport": { "width": 375, "height": 812 }, "name": "mobile" }
 ```
 
 ## Pattern 8: Custom JS evaluation
-
 ```
 xd://browser { "action": "run", "name": "main", "code": "
-  const result = await tab.evaluate(() => {
-    return {
-      title: document.title,
-      url: location.href,
-      html: document.querySelector('main').innerHTML.length
-    };
-  });
+  const result = await tab.evaluate(() => ({
+    title: document.title,
+    url: location.href
+  }));
   result
 " }
 ```
 
-## Pattern 9: Wait conditions and timeouts
-
+## Pattern 9: Wait conditions
 ```
-# Wait for element to appear
+# Element appears
 xd://browser { "action": "run", "name": "main", "code": "
   await tab.waitForSelector('.toast-success', { timeout: 5000 });
   'found it'
 " }
-
-# Wait for URL change
+# URL change
 xd://browser { "action": "run", "name": "main", "code": "
   await tab.click('button');
   await tab.waitForUrl('**/dashboard');
@@ -178,20 +152,17 @@ xd://browser { "action": "run", "name": "main", "code": "
 " }
 ```
 
-## Pattern 10: Full QA workflow (complete dogfood)
-
+## Pattern 10: Full QA workflow
 ```
 # 1. Open
 xd://browser { "action": "open", "url": "https://app.com/login", "name": "main" }
-
-# 2. Check console errors + observe
+# 2. Check console + observe
 xd://browser { "action": "run", "name": "main", "code": "
   const errs = [];
   page.on('console', m => m.type() === 'error' && errs.push(m.text()));
   page.on('requestfailed', r => errs.push('NET '+r.url()));
   tab.observe()
 " }
-
 # 3. Fill form and submit
 xd://browser { "action": "run", "name": "main", "code": "
   await tab.fill('aria-ref=e1', 'user@test.com');
@@ -199,52 +170,59 @@ xd://browser { "action": "run", "name": "main", "code": "
   await tab.click('aria-ref=e3');
   tab.screenshot()
 " }
-
-# 4. Verify authenticated state
+# 4. Verify
 xd://browser { "action": "run", "name": "main", "code": "
-  const url = page.url();
-  const heading = tab.extract('h1');
-  const shot = tab.screenshot();
-  { url, heading, shot, consoleErrors: [] }
+  { url: page.url(), heading: await tab.extract('h1'), screenshot: await tab.screenshot() }
 " }
-
 # 5. Close
 xd://browser { "action": "close", "name": "main" }
 ```
 
----
-
-## Advanced: Snapshot diff, annotation, CSS
+## Advanced patterns
 
 ```
-# Before/after diff — extract text before and after an action
+# Before/after diff — snapshot state comparison
 xd://browser { "action": "run", "name": "main",
   "code": "const b=await tab.extract('body'); await tab.click('#btn');"+
     "const a=await tab.extract('body'); {b:b.slice(0,200), a:a.slice(0,200)}" }
 
-# Annotated screenshot — draw red boxes around interactive elements
+# Annotated screenshot — red overlay boxes with element labels
 xd://browser { "action": "run", "name": "main", "code": "
-  const el = document.createElement('div');
-  el.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99999';
-  document.body.appendChild(el);
+  const o = Object.assign(document.createElement('div'),
+    {style:'position:fixed;inset:0;pointer-events:none;z-index:99999'});
+  document.body.appendChild(o);
   document.querySelectorAll('button,a,input,select').forEach((e,i) => {
     const r = e.getBoundingClientRect();
-    const b = document.createElement('div');
-    b.style.cssText = 'position:absolute;border:2px solid red;background:rgba(255,0,0,0.08)';
-    Object.assign(b.style, {left:r.left+'px', top:r.top+'px', width:r.width+'px', height:r.height+'px'});
+    const b = Object.assign(document.createElement('div'),
+      {style:'position:absolute;border:2px solid red;background:rgba(255,0,0,0.08)'});
+    Object.assign(b.style, {left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
     const l = Object.assign(document.createElement('span'), {textContent:'@e'+(i+1)});
     l.style.cssText = 'position:absolute;top:-16px;left:0;background:red;color:#fff;font:10px monospace;padding:1px 3px';
-    b.appendChild(l); el.appendChild(b);
+    b.appendChild(l); o.appendChild(b);
   });
-  const p = await tab.screenshot({ silent: true }); el.remove(); p
+  const p = await tab.screenshot({ silent: true }); o.remove(); p
 " }
 
-# CSS inspection — computed styles via evaluate
+# CSS inspection — computed styles
 xd://browser { "action": "run", "name": "main",
   "code": "tab.evaluate(() => { const el=document.querySelector('.el');"+
     "if(!el)return; const cs=getComputedStyle(el);"+
     "return ['color','background-color','font-size','display','margin','padding',"+
     "'border','opacity'].reduce((o,k)=>{o[k]=cs.getPropertyValue(k);return o;},{}) })" }
+
+# Page cleanup — remove sticky banners, cookie notices
+xd://browser { "action": "run", "name": "main", "code": "
+  document.querySelectorAll('div[class*=\"cookie\"],div[class*=\"banner\"],"+
+    'div[class*=\"sticky\"],div[class*=\"consent\"],div[id*=\"cookie\"]').forEach(e => e.remove());
+  document.querySelectorAll('header,footer').forEach(e => e.style.position='static');
+  'cleaned'
+" }
+
+# URL content diff — compare two pages by extracting text
+xd://browser { "action": "run", "name": "main",
+  "code": "const r1=await(await fetch(url1)).text();"+
+    "const r2=await(await fetch(url2)).text();"+
+    "{len1:r1.length,len2:r2.length,same:r1===r2}" }
 ```
 
 ## Reference: xd://browser API map
@@ -263,24 +241,21 @@ xd://browser { "action": "run", "name": "main",
 | `$B tabs` | Multiple `name` on `open` |
 
 ## Gotchas
-
 - **`tab.fill` does NOT work on `<select>`** — use `tab.select` instead.
 - **Navigation invalidates refs** — always `tab.observe()` after `goto` or
   a click that moves to a new page.
 - **`tab.waitForNavigation` must start BEFORE the trigger click** — set it
   up in the same `run` call.
 - **Screenshot path is returned, not passed** — `tab.screenshot()` returns
-  the path; the `silent: true` option suppresses auto-display.
-- **Code runs with full Node access** — scoped to the `run` call, no
-  sandbox. Don't execute untrusted page content.
-- **stalled actions fail fast** — don't add sleep/retry loops; the tool
-  handles timeouts internally.
+  the path; `silent: true` suppresses auto-display.
+- **Code runs with full Node access** — no sandbox. Don't execute untrusted
+  page content.
+- **Stalled actions fail fast** — don't add sleep/retry loops.
 
 ## When to use which
-
 | Need | Tool |
 |---|---|
-| Quick interactive verification | `browse` skill (this one) |
+| Quick interactive verification | `browse` (this skill) |
 | Durable re-runnable E2E test | `browser-test` skill |
 | Static content read | `read` tool (no browser needed) |
 | Complex auth / CAPTCHA | `setup-browser-cookies` then `browse` |
