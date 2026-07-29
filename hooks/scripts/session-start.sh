@@ -75,4 +75,8 @@ if [ -f "$INDEX_FILE" ]; then
 fi
 
 echo "[idev] Briefly tell the user what the last task was and any open issues, then ask: continue or start fresh?"
+
+# ── Start project-map watcher daemon (background, auto-regenerates on changes)
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/map-watcher-daemon.sh" start 2>/dev/null
+
 exit 0
