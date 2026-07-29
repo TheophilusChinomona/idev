@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gen-004",
+    "scenario": "db-preflight_activation_3",
+    "description": "Scenario triggering activation: On DB error**: When a runtime error mentions \"Invalid object name\", \"Invalid column name\", or similar schema errors",
+    "skill_section": "activation",
+    "expected_signals": [
+      "On DB error**: When a runtime error mentions \"Invalid object name\", \"Invalid column name\", or similar schema errors"
+    ],
+    "anti_patterns": [],
+    "task_type": "database",
+    "complexity": "medium"
+  }
+]

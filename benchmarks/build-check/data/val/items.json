@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gen-002",
+    "scenario": "build-check_activation_1",
+    "description": "Scenario triggering activation: After completing a multi-file feature (run once at the end)",
+    "skill_section": "activation",
+    "expected_signals": [
+      "After completing a multi-file feature (run once at the end)"
+    ],
+    "anti_patterns": [],
+    "task_type": "build",
+    "complexity": "medium"
+  }
+]

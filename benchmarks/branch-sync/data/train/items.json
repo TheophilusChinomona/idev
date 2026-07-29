@@ -1,0 +1,165 @@
+[
+  {
+    "id": "train-001",
+    "scenario": "clean_merge",
+    "description": "Feature branch is behind base branch with no conflicts. Simple fast-forward or merge commit possible.",
+    "git_state": {
+      "current_branch": "feature/add-orders-api",
+      "base_branch": "developer",
+      "remote_base_ahead": 3,
+      "local_commits_ahead": 2,
+      "working_tree_clean": true,
+      "conflicts": false,
+      "files_changed_in_base": ["src/services/OrderService.cs", "src/controllers/OrderController.cs"],
+      "files_changed_in_feature": ["src/services/PaymentService.cs", "src/controllers/PaymentController.cs"]
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-orders-api"
+    ],
+    "expected_behaviors": [
+      "fetches before merge",
+      "merges base into feature",
+      "pushes after successful merge",
+      "does not use --ours or --theirs"
+    ],
+    "anti_patterns": [
+      "git checkout --ours",
+      "git checkout --theirs",
+      "git rebase",
+      "git stash"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "train-002",
+    "scenario": "dirty_tree",
+    "description": "Feature branch has uncommitted changes. Skill should surface them and ask user to commit or stash.",
+    "git_state": {
+      "current_branch": "feature/refactor-auth",
+      "base_branch": "developer",
+      "remote_base_ahead": 1,
+      "local_commits_ahead": 4,
+      "working_tree_clean": false,
+      "dirty_files": ["src/auth/Login.tsx", "src/auth/types.ts"],
+      "conflicts": false,
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git status --porcelain",
+      "git stash push -u"
+    ],
+    "expected_behaviors": [
+      "detects dirty tree before merge",
+      "surfaces dirty files to user",
+      "offers commit or stash options",
+      "does not silently stash"
+    ],
+    "anti_patterns": [
+      "git stash push (without -u or telling user)",
+      "git merge (with dirty tree)",
+      "git checkout -- ."
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "train-003",
+    "scenario": "on_base_branch",
+    "description": "User is on the base branch itself. Skill should refuse to sync.",
+    "git_state": {
+      "current_branch": "developer",
+      "base_branch": "developer",
+      "remote_base_ahead": 0,
+      "local_commits_ahead": 0,
+      "working_tree_clean": true,
+      "conflicts": false
+    },
+    "expected_commands": [],
+    "expected_behaviors": [
+      "refuses to sync the base branch",
+      "explains this skill is for feature branches"
+    ],
+    "anti_patterns": [
+      "git merge",
+      "git push"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "train-004",
+    "scenario": "merge_conflicts",
+    "description": "Merge produces conflicts in two files. Skill should resolve carefully, understanding both sides.",
+    "git_state": {
+      "current_branch": "feature/update-permissions",
+      "base_branch": "developer",
+      "remote_base_ahead": 5,
+      "local_commits_ahead": 3,
+      "working_tree_clean": true,
+      "conflicts": true,
+      "conflict_files": [
+        {
+          "file": "src/middleware/auth.ts",
+          "base_change": "Added rate limiting middleware",
+          "feature_change": "Added role-based access control"
+        },
+        {
+          "file": "src/config/permissions.json",
+          "base_change": "Updated default permissions for admin role",
+          "feature_change": "Added new permission for export feature"
+        }
+      ],
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git diff --name-only --diff-filter=U",
+      "git add",
+      "git commit --no-edit"
+    ],
+    "expected_behaviors": [
+      "fetches before merge",
+      "lists conflicted files",
+      "understands both sides' intent",
+      "resolves by integrating both changes",
+      "stages resolved files",
+      "commits merge"
+    ],
+    "anti_patterns": [
+      "git checkout --ours (wholesale)",
+      "git checkout --theirs (wholesale)",
+      "git merge --abort (without trying)",
+      "git rebase"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "train-005",
+    "scenario": "clean_merge_with_verification",
+    "description": "Clean merge followed by build verification. Skill should run build-check after merge.",
+    "git_state": {
+      "current_branch": "feature/add-export",
+      "base_branch": "developer",
+      "remote_base_ahead": 2,
+      "local_commits_ahead": 1,
+      "working_tree_clean": true,
+      "conflicts": false
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git merge origin/developer --no-edit"
+    ],
+    "expected_behaviors": [
+      "fetches before merge",
+      "merges base into feature",
+      "runs build verification after merge",
+      "reports merge results"
+    ],
+    "anti_patterns": [
+      "skipping build verification",
+      "declaring sync done without verification"
+    ],
+    "task_type": "branch_sync"
+  }
+]

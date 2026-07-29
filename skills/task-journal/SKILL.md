@@ -1,6 +1,6 @@
 ---
 name: task-journal
-description: "Persistent task log across sessions: pending tasks, completed work, known issues, backlog. Use when starting a session, completing a task, hitting a blocker, or asked what is pending or in progress."
+description: "Persistent task log across sessions: pending tasks, completed work, known issues, backlog. Use when starting a session, completing a task, hitting a blocker, or asked what is pending or in progress. Delegates session persistence to the remember plugin."
 ---
 
 # Task Journal Skill
@@ -16,10 +16,19 @@ Persistent task tracking across sessions. Records what was done, what's pending,
 
 ## How It Works
 
-A rolling journal is maintained at:
-`.claude/idev/task-journal/journal.md`
+### Primary: remember plugin integration
+The remember plugin (installed separately) handles session-level persistence via `.remember/` in the project root. When available, task-journal reads from and writes alongside the remember plugin's files:
 
-Unlike session-resume (which tracks the CURRENT session), the journal is a **persistent log** that accumulates across sessions.
+- **Read at session start**: `.remember/` session files provide recent session history
+- **Write task entries**: Append to `.claude/idev/task-journal/journal.md` (the persistent, human-curated log)
+
+### Fallback: standalone journal
+When the remember plugin is not installed, task-journal operates standalone using `.claude/idev/task-journal/journal.md`.
+
+### Why two systems?
+- remember plugin: automatic session capture, consolidation, compression — system-maintained
+- task-journal: manually curated, structured task log — human-maintained for high-signal entries
+- They complement each other: remember captures everything, task-journal captures what matters
 
 ---
 
@@ -112,21 +121,23 @@ Last updated: YYYY-MM-DD HH:mm
 ## Integration with Other Skills
 
 ```
-Task Journal works WITH session-resume:
+Task Journal works WITH session-resume AND the remember plugin:
   - session-resume = ephemeral (current session snapshot, overwritten each time)
   - task-journal = persistent (rolling log across all sessions)
+  - remember plugin = automatic session capture and consolidation
 
 Workflow:
   1. Session starts → load session-resume (what was I doing?)
   2. Session starts → load task-journal (what's the big picture?)
-  3. Task done → update task-journal (log it)
-  4. Session ends → update session-resume (snapshot current state)
+  3. Session starts → remember plugin provides recent session history
+  4. Task done → update task-journal (log it)
+  5. Session ends → update session-resume (snapshot current state)
+  6. Session ends → remember plugin captures session for future reference
 ```
 
 ---
 
 ## Anti-Patterns
-
 1. Do NOT write to journal for trivial actions (reading files, searching)
 2. Do NOT duplicate the same entry multiple times
 3. Do NOT let the journal grow beyond ~150 lines (archive old completed items)

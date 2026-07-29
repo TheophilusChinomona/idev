@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gen-002",
+    "scenario": "db-preflight_activation_1",
+    "description": "Scenario triggering activation: Session start**: SessionStart hook surfaces unapplied scripts",
+    "skill_section": "activation",
+    "expected_signals": [
+      "Session start**: SessionStart hook surfaces unapplied scripts"
+    ],
+    "anti_patterns": [],
+    "task_type": "database",
+    "complexity": "medium"
+  }
+]

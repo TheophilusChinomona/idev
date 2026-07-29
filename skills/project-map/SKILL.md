@@ -33,10 +33,21 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project-map/ai_map_updater.py" \
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/project-map/map_watcher.py"
 ```
 
-## Using the map
-The map contains flat file listings with annotations: `FRONTEND FILES` / `BACKEND FILES` plus a domain entity count (split mode), or layer categories — Pages/UI, Services, Domain, Infrastructure, Other — with referenced `.csproj` projects labeled (unified mode). It does NOT contain module summaries, pattern documentation, or gotchas — do not expect those sections.
-
 - Always access the map via Grep — never load the whole file. Grep for the feature or file name (e.g. `Grep "Order" .claude/idev/project-map/project.map.md`), then Read only the source files it points to.
 - Load only the relevant section (frontend / backend / a single category) when a section-level view is needed.
 - If the map is missing or stale, regenerate it (command above) before trusting it.
 - Follow `${CLAUDE_PLUGIN_ROOT}/skills/project-map/map.rules.md` for the full rules.
+
+## Staleness Detection
+
+The map file records a `Generated:` timestamp at the top. Check staleness:
+```
+1. Read the first 5 lines of project.map.md
+2. Extract the "Generated: YYYY-MM-DD" date
+3. If older than 14 days → warn: "project-map is N days old — results may be stale"
+4. If older than 30 days → fail loudly: "project-map is severely stale — regenerate before trusting"
+5. If missing → generate before proceeding
+```
+
+The session-start hook also checks file mtime and warns if > 14 days old.
+When regenerating, update the `Generated:` timestamp in the output.

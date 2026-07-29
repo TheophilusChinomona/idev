@@ -164,6 +164,18 @@ Illustrative examples ONLY — the real keyword list is the `features` array in 
 | **Target per task** | **< 1,500** |
 
 ---
+## Staleness Detection
+
+The index.json records a `generated` timestamp. Check staleness:
+```
+1. Read index.json and extract the "generated" date
+2. If older than 14 days → warn: "smart-context index is N days old — may miss new features"
+3. If older than 30 days → fail loudly: "smart-context index is severely stale — regenerate"
+4. If missing → generate before proceeding (see "Generating the index" above)
+```
+
+The session-start hook also checks file mtime and warns if > 14 days old.
+When regenerating, the scanner updates the `generated` timestamp automatically.
 
 ## Summary
 

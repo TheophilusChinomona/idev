@@ -1,0 +1,138 @@
+[
+  {
+    "id": "train-001",
+    "scenario": "clean_merge",
+    "description": "Feature branch is behind base branch with no conflicts. Simple fast-forward or merge commit possible.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-orders-api"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git merge origin/developer --no-edit",
+      "  ✓ git push origin feature/add-orders-api",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: fetches before merge",
+      "  ✓ Behavior: merges base into feature",
+      "  ✓ Behavior: pushes after successful merge",
+      "  ✓ Behavior: does not use --ours or --theirs"
+    ]
+  },
+  {
+    "id": "train-002",
+    "scenario": "dirty_tree",
+    "description": "Feature branch has uncommitted changes. Skill should surface them and ask user to commit or stash.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git status --porcelain",
+      "git stash push -u -m 'pre-sync'"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git status --porcelain",
+      "  ✓ git stash push -u",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: detects dirty tree before merge",
+      "  ✓ Behavior: surfaces dirty files to user",
+      "  ✓ Behavior: offers commit or stash options",
+      "  ✓ Behavior: does not silently stash"
+    ]
+  },
+  {
+    "id": "train-003",
+    "scenario": "on_base_branch",
+    "description": "User is on the base branch itself. Skill should refuse to sync.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git branch --show-current"
+    ],
+    "details": [
+      "Commands:",
+      "No commands expected (refusal scenario)",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: refuses to sync the base branch",
+      "  ✓ Behavior: explains this skill is for feature branches"
+    ]
+  },
+  {
+    "id": "train-004",
+    "scenario": "merge_conflicts",
+    "description": "Merge produces conflicts in two files. Skill should resolve carefully, understanding both sides.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git diff --name-only --diff-filter=U",
+      "git add src/middleware/auth.ts",
+      "git add src/config/permissions.json",
+      "git commit --no-edit"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git merge origin/developer --no-edit",
+      "  ✓ git diff --name-only --diff-filter=U",
+      "  ✓ git add",
+      "  ✓ git commit --no-edit",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: fetches before merge",
+      "  ✓ Behavior: lists conflicted files",
+      "  ✓ Behavior: understands both sides' intent",
+      "  ✓ Behavior: resolves by integrating both changes",
+      "  ✓ Behavior: stages resolved files",
+      "  ✓ Behavior: commits merge"
+    ]
+  },
+  {
+    "id": "train-005",
+    "scenario": "clean_merge_with_verification",
+    "description": "Clean merge followed by build verification. Skill should run build-check after merge.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-export"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git merge origin/developer --no-edit",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: fetches before merge",
+      "  ✓ Behavior: merges base into feature",
+      "  ✓ Behavior: runs build verification after merge",
+      "  ✓ Behavior: reports merge results"
+    ]
+  }
+]

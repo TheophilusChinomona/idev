@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.13.0 — 2026-07-29
+
+### Added
+- `db-preflight` skill: auto-scans `DBScripts/` folder for unapplied database
+  migrations and surfaces them at session start or before builds. Maps runtime
+  "Invalid object name" errors back to the missing DBScript. Prevents the
+  recurring 500 errors from hand-applied migrations being missed.
+- `skillopt` skill + `/idev:skillopt` command: benchmark and optimize any skill
+  using Microsoft SkillOpt. Generates test scenarios from skill content, runs
+  evaluation via Codex CLI subscription, reports per-scenario scores.
+- `/idev:update` command: update the idev plugin itself to the latest version
+  from GitHub; pulls code, reinstalls, and runs upgrade to reconcile state.
+- SkillOpt benchmark infrastructure: `benchmarks/` directory with scenario
+  generator, config generator, and standalone evaluator.
+
+### Changed
+- `build-check`: merged test-map functionality (Phase 5b: Test Mapping) —
+  now includes source-to-test file mapping and targeted test running.
+- `task-journal`: integrates with the remember plugin for session persistence
+  while keeping its own curated task journal.
+- `lessons-learned`: defers to task-journal for general task tracking; focused
+  on gotchas and prevention steps.
+- `session-resume`: added proactive save prompts at natural stopping points
+  (task completion, feature switch, session end).
+- `idev-init`: refuses to leave `project-config.json` templated — prompts for
+  `baseBranch`, project name/type/framework. Offers auto-learning opt-in
+  during init. Validates `watcher_config.json` and fails loudly if blank.
+- `project-map` and `smart-context`: added staleness detection (warn >14 days,
+  fail >30 days). Session-start hook warns when stale.
+- Session-start hook: now surfaces unapplied DBScripts and staleness warnings.
+
+### Deprecated
+- `architecture-scanner`: merged into project-map, backend-patterns, frontend-patterns.
+- `file-index`: merged into smart-context.
+- `import-graph`: superseded by LSP tools (lsp references, lsp definition).
+- `test-map`: merged into build-check (Phase 5b).
+- `post-creation-verify`: merged into build-check (pre-flight checks).
+
+### Removed
+- Duplicated task tracking between task-journal and lessons-learned.
+
+## 0.12.0 — 2026-07-01
+
+### Added
+- `env-preflight` skill: session startup sanity check — verifies cwd is the
+  repo root, git auth is live, DB env vars are present and masked, and reports
+  active sandbox constraints. Wired into the SessionStart hook so it runs
+  automatically and stays silent when everything is healthy.
+- `pre-ship-verify` skill: migration-aware pre-PR gate — diffs the migration
+  system state against changed model/schema files (EF Core, Prisma, Alembic,
+  Flyway, Knex, Rails, Django), runs build/type-check, and optionally
+  smoke-tests changed API routes against a running app before allowing a PR.
+  Surfaces missing migrations loudly before they reach production.
+
 ## 0.11.2 — 2026-06-25
 
 ### Fixed

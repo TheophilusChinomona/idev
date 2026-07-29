@@ -1,0 +1,81 @@
+[
+  {
+    "id": "val-001",
+    "scenario": "lockfile_conflict",
+    "description": "Merge conflict in package-lock.json. Skill should regenerate, not hand-merge.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git diff --name-only --diff-filter=U",
+      "git commit --no-edit"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git merge origin/developer --no-edit",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: recognizes lockfile conflict",
+      "  ✓ Behavior: regenerates lockfile with npm install instead of hand-merging",
+      "  ✓ Behavior: stages regenerated lockfile"
+    ]
+  },
+  {
+    "id": "val-002",
+    "scenario": "ambiguous_conflict",
+    "description": "Conflict where both sides changed the same logic and correct combination is unclear.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git diff --name-only --diff-filter=U",
+      "git commit --no-edit"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git merge origin/developer --no-edit",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: detects ambiguous conflict",
+      "  ✓ Behavior: stops and asks user for resolution",
+      "  ✓ Behavior: shows both diffs to user",
+      "  ✓ Behavior: does not guess at resolution"
+    ]
+  },
+  {
+    "id": "val-003",
+    "scenario": "long_lived_branch",
+    "description": "Feature branch is very old (100+ commits behind). Skill should still merge, not rebase.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/legacy-migration"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git merge origin/developer --no-edit",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: merges even for long-lived branches",
+      "  ✓ Behavior: does not suggest rebase",
+      "  ✓ Behavior: handles large merge"
+    ]
+  }
+]

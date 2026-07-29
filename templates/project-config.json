@@ -1,9 +1,9 @@
 {
-  "_instructions": "TEMPLATE — fill in per project, or let the skills populate it. The pattern skills (smart-context, backend-patterns, frontend-patterns, architecture-scanner) auto-detect stack and paths on first scan; this file holds the conventions and config that CANNOT be detected by scanning (business rules, agreed conventions, limits).",
+  "_instructions": "TEMPLATE — fill in per project, or let idev-init prompt for these values. The pattern skills (smart-context, backend-patterns, frontend-patterns, architecture-scanner) auto-detect stack and paths on first scan; this file holds the conventions and config that CANNOT be detected by scanning (business rules, agreed conventions, limits).",
   "project": {
-    "name": "{{PROJECT_NAME}}",
-    "type": "{{e.g. aspnet-react | django | express-vue}}",
-    "framework": "{{e.g. net8.0 | python3.12 | node20}}"
+    "name": "",
+    "type": "",
+    "framework": ""
   },
   "conventions": {
     "_note": "Document project-specific conventions Claude must always apply, e.g. soft-delete approach, entity tracking rules, required default values. Delete this key if none."
@@ -13,7 +13,7 @@
   },
   "git": {
     "_note": "Used by branch-sync/branch-syncer and the PR commands. baseBranch: the branch PRs target and that gets merged INTO feature branches before a PR. syncStrategy: merge (default) or rebase. platform: auto (detect from origin URL: dev.azure.com/visualstudio.com -> azure-devops, github.com -> github), or set explicitly.",
-    "baseBranch": "{{e.g. developer | develop | main}}",
+    "baseBranch": "developer",
     "syncStrategy": "merge",
     "platform": "auto"
   }

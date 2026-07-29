@@ -1,0 +1,32 @@
+# Auto-generated SkillOpt config for db-preflight
+# Model: gpt-5.4 via Codex CLI
+
+model:
+  reasoning_effort: medium
+
+train:
+  train_size: 5
+  batch_size: 5
+  accumulation: 1
+
+gradient:
+  minibatch_size: 3
+  merge_batch_size: 3
+
+optimizer:
+  learning_rate: 4
+
+evaluation:
+  sel_env_num: 0
+  test_env_num: 5
+
+env:
+  name: db-preflight
+  skill_init: skills/db-preflight/SKILL.md
+  split_mode: split_dir
+  split_dir: benchmarks/db-preflight/data
+  data_path: ""
+  split_output_dir: ""
+  max_completion_tokens: 4096
+  workers: 1
+  limit: 0

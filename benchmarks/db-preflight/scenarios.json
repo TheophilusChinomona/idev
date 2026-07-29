@@ -1,0 +1,88 @@
+{
+  "skill_name": "db-preflight",
+  "skill_path": "skills/db-preflight/SKILL.md",
+  "domain": "database",
+  "scenarios": [
+    {
+      "id": "gen-001",
+      "scenario": "db-preflight_happy_path",
+      "description": "Standard db-preflight operation — everything works as expected.",
+      "skill_section": "procedure",
+      "expected_signals": [
+        "1. Glob for DBScripts/**/*.sql (or DBScripts/**/*.ps1, DBScripts/**/*.sh)",
+        "2. Extract script names (sort by date prefix if present: YYYY-MM-DD-*.sql)",
+        "3. Compare against applied.json",
+        "4. Report unapplied scripts with their date and description",
+        "- 2026-07-25-add-role-alias-table.sql"
+      ],
+      "anti_patterns": [],
+      "task_type": "database",
+      "complexity": "easy"
+    },
+    {
+      "id": "gen-002",
+      "scenario": "db-preflight_activation_1",
+      "description": "Scenario triggering activation: Session start**: SessionStart hook surfaces unapplied scripts",
+      "skill_section": "activation",
+      "expected_signals": [
+        "Session start**: SessionStart hook surfaces unapplied scripts"
+      ],
+      "anti_patterns": [],
+      "task_type": "database",
+      "complexity": "medium"
+    },
+    {
+      "id": "gen-003",
+      "scenario": "db-preflight_activation_2",
+      "description": "Scenario triggering activation: Before build**: build-check runs this as a pre-flight step",
+      "skill_section": "activation",
+      "expected_signals": [
+        "Before build**: build-check runs this as a pre-flight step"
+      ],
+      "anti_patterns": [],
+      "task_type": "database",
+      "complexity": "medium"
+    },
+    {
+      "id": "gen-004",
+      "scenario": "db-preflight_activation_3",
+      "description": "Scenario triggering activation: On DB error**: When a runtime error mentions \"Invalid object name\", \"Invalid column name\", or similar schema errors",
+      "skill_section": "activation",
+      "expected_signals": [
+        "On DB error**: When a runtime error mentions \"Invalid object name\", \"Invalid column name\", or similar schema errors"
+      ],
+      "anti_patterns": [],
+      "task_type": "database",
+      "complexity": "medium"
+    },
+    {
+      "id": "gen-005",
+      "scenario": "db-preflight_complex",
+      "description": "Complex db-preflight scenario requiring multiple procedure steps and handling edge cases.",
+      "skill_section": "full_procedure",
+      "expected_signals": [
+        "1. Glob for DBScripts/**/*.sql (or DBScripts/**/*.ps1, DBScripts/**/*.sh)",
+        "2. Extract script names (sort by date prefix if present: YYYY-MM-DD-*.sql)",
+        "3. Compare against applied.json",
+        "4. Report unapplied scripts with their date and description",
+        "- 2026-07-25-add-role-alias-table.sql",
+        "- 2026-07-28-add-support-portal-mailbox.sql",
+        "1. 2026-07-25-add-role-alias-table.sql",
+        "2. 2026-07-28-add-support-portal-mailbox.sql",
+        "- Tables created (`CREATE TABLE`)",
+        "- Columns added (`ALTER TABLE.*ADD`)",
+        "- Views created (`CREATE VIEW`)",
+        "- Stored procedures (`CREATE PROCEDURE`)"
+      ],
+      "anti_patterns": [],
+      "task_type": "database",
+      "complexity": "hard"
+    }
+  ],
+  "stats": {
+    "total": 5,
+    "easy": 1,
+    "medium": 3,
+    "hard": 1
+  }
+}

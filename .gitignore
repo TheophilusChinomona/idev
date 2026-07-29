@@ -21,3 +21,6 @@ __pycache__/
 
 # Generated codebase-explainer output (local artifact, not plugin source)
 docs/onboarding/
+
+# SkillOpt evaluation outputs (local artifacts)
+outputs/

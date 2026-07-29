@@ -1,0 +1,174 @@
+[
+  {
+    "id": "test-001",
+    "scenario": "multi_file_conflict_with_generated",
+    "description": "Conflict across multiple files including a generated migration file. Skill should regenerate migration, hand-merge source files.",
+    "git_state": {
+      "current_branch": "feature/add-invoices",
+      "base_branch": "developer",
+      "remote_base_ahead": 6,
+      "local_commits_ahead": 4,
+      "working_tree_clean": true,
+      "conflicts": true,
+      "conflict_files": [
+        {
+          "file": "src/services/InvoiceService.cs",
+          "base_change": "Added tax calculation",
+          "feature_change": "Added discount calculation"
+        },
+        {
+          "file": "src/controllers/InvoiceController.cs",
+          "base_change": "Added GET /api/invoices/tax-summary endpoint",
+          "feature_change": "Added POST /api/invoices/discount endpoint"
+        },
+        {
+          "file": "DBScripts/2026-07-25-add-invoice-discount.sql",
+          "base_change": null,
+          "feature_change": "Created migration for DiscountColumn",
+          "generated": true
+        }
+      ],
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git merge origin/developer --no-edit",
+      "git diff --name-only --diff-filter=U",
+      "git add src/services/InvoiceService.cs",
+      "git add src/controllers/InvoiceController.cs"
+    ],
+    "expected_behaviors": [
+      "hand-merges source files (InvoiceService, InvoiceController)",
+      "recognizes generated migration file",
+      "integrates both changes in source files",
+      "commits the merge"
+    ],
+    "anti_patterns": [
+      "hand-merging the SQL migration file",
+      "git checkout --ours on source files",
+      "ignoring one side's changes"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "test-002",
+    "scenario": "push_fails_not_uptodate",
+    "description": "Push fails because someone else pushed to the feature branch. Skill should pull and retry.",
+    "git_state": {
+      "current_branch": "feature/add-notifications",
+      "base_branch": "developer",
+      "remote_base_ahead": 2,
+      "local_commits_ahead": 3,
+      "working_tree_clean": true,
+      "conflicts": false,
+      "push_fails": true,
+      "push_error": "! [rejected] feature/add-notifications -> feature/add-notifications (non-fast-forward)"
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-notifications"
+    ],
+    "expected_behaviors": [
+      "fetches before merge",
+      "merges base into feature",
+      "retries push after pull"
+    ],
+    "anti_patterns": [
+      "git push --force",
+      "git push -f"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "test-003",
+    "scenario": "rebase_strategy_config",
+    "description": "Project config says syncStrategy is 'rebase'. Skill should rebase instead of merge.",
+    "git_state": {
+      "current_branch": "feature/optimize-queries",
+      "base_branch": "developer",
+      "remote_base_ahead": 3,
+      "local_commits_ahead": 2,
+      "working_tree_clean": true,
+      "conflicts": false,
+      "sync_strategy": "rebase",
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git rebase origin/developer"
+    ],
+    "expected_behaviors": [
+      "reads sync_strategy from config",
+      "rebases instead of merging",
+      "handles rebase conflicts if any"
+    ],
+    "anti_patterns": [
+      "git merge (when config says rebase)"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "test-004",
+    "scenario": "pr_creation_github",
+    "description": "After successful sync, offer to create PR on GitHub.",
+    "git_state": {
+      "current_branch": "feature/add-search",
+      "base_branch": "developer",
+      "remote_base_ahead": 1,
+      "local_commits_ahead": 2,
+      "working_tree_clean": true,
+      "conflicts": false,
+      "platform": "github",
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-search"
+    ],
+    "expected_behaviors": [
+      "completes merge and push",
+      "offers to create PR",
+      "uses gh pr create for GitHub"
+    ],
+    "anti_patterns": [
+      "creating PR without asking user"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "test-005",
+    "scenario": "mid_merge_abort",
+    "description": "Merge goes wrong, user wants to abort. Skill should use git merge --abort.",
+    "git_state": {
+      "current_branch": "feature/risky-refactor",
+      "base_branch": "developer",
+      "remote_base_ahead": 8,
+      "local_commits_ahead": 5,
+      "working_tree_clean": true,
+      "conflicts": true,
+      "user_wants_abort": true,
+      "conflict_files": [
+        {
+          "file": "src/core/Engine.ts",
+          "base_change": "Complete rewrite of core engine",
+          "feature_change": "Incremental improvements to core engine"
+        }
+      ],
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git merge --abort"
+    ],
+    "expected_behaviors": [
+      "aborts merge cleanly",
+      "returns to pre-merge state",
+      "reports what was aborted"
+    ],
+    "anti_patterns": [
+      "git reset --hard (without user confirmation)",
+      "git checkout --ours"
+    ],
+    "task_type": "branch_sync"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gen-004",
+    "scenario": "build-check_activation_3",
+    "description": "Scenario triggering activation: When the user asks to build or check compilation",
+    "skill_section": "activation",
+    "expected_signals": [
+      "When the user asks to build or check compilation"
+    ],
+    "anti_patterns": [],
+    "task_type": "build",
+    "complexity": "medium"
+  }
+]

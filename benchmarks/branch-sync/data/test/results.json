@@ -1,0 +1,137 @@
+[
+  {
+    "id": "test-001",
+    "scenario": "multi_file_conflict_with_generated",
+    "description": "Conflict across multiple files including a generated migration file. Skill should regenerate migration, hand-merge source files.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git diff --name-only --diff-filter=U",
+      "git add src/services/InvoiceService.cs",
+      "git add src/controllers/InvoiceController.cs",
+      "git add DBScripts/2026-07-25-add-invoice-discount.sql",
+      "git commit --no-edit"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git merge origin/developer --no-edit",
+      "  ✓ git diff --name-only --diff-filter=U",
+      "  ✓ git add src/services/InvoiceService.cs",
+      "  ✓ git add src/controllers/InvoiceController.cs",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: hand-merges source files (InvoiceService, InvoiceController)",
+      "  ✓ Behavior: recognizes generated migration file",
+      "  ✓ Behavior: integrates both changes in source files",
+      "  ✓ Behavior: commits the merge"
+    ]
+  },
+  {
+    "id": "test-002",
+    "scenario": "push_fails_not_uptodate",
+    "description": "Push fails because someone else pushed to the feature branch. Skill should pull and retry.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-notifications"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git merge origin/developer --no-edit",
+      "  ✓ git push origin feature/add-notifications",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: fetches before merge",
+      "  ✓ Behavior: merges base into feature",
+      "  ✓ Behavior: retries push after pull"
+    ]
+  },
+  {
+    "id": "test-003",
+    "scenario": "rebase_strategy_config",
+    "description": "Project config says syncStrategy is 'rebase'. Skill should rebase instead of merge.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git rebase origin/developer",
+      "git push origin feature/optimize-queries"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git rebase origin/developer",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: reads sync_strategy from config",
+      "  ✓ Behavior: rebases instead of merging",
+      "  ✓ Behavior: handles rebase conflicts if any"
+    ]
+  },
+  {
+    "id": "test-004",
+    "scenario": "pr_creation_github",
+    "description": "After successful sync, offer to create PR on GitHub.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git rev-parse HEAD",
+      "git fetch origin",
+      "git merge origin/developer --no-edit",
+      "git push origin feature/add-search"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git fetch origin",
+      "  ✓ git merge origin/developer --no-edit",
+      "  ✓ git push origin feature/add-search",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: completes merge and push",
+      "  ✓ Behavior: offers to create PR",
+      "  ✓ Behavior: uses gh pr create for GitHub"
+    ]
+  },
+  {
+    "id": "test-005",
+    "scenario": "mid_merge_abort",
+    "description": "Merge goes wrong, user wants to abort. Skill should use git merge --abort.",
+    "hard": 1,
+    "soft": 1.0,
+    "command_score": 1.0,
+    "anti_pattern_score": 1.0,
+    "behavior_score": 1.0,
+    "predicted_commands": [
+      "git merge --abort"
+    ],
+    "details": [
+      "Commands:",
+      "  ✓ git merge --abort",
+      "Anti-patterns:",
+      "Behaviors:",
+      "  ✓ Behavior: aborts merge cleanly",
+      "  ✓ Behavior: returns to pre-merge state",
+      "  ✓ Behavior: reports what was aborted"
+    ]
+  }
+]

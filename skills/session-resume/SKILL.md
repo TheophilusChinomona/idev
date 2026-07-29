@@ -1,6 +1,6 @@
 ---
 name: session-resume
-description: "Cross-session context persistence via .claude/idev/session-resume/last-session.json. Use when resuming work in a new session, or to save working context at task completion or when the user asks to save."
+description: "Cross-session context persistence via .claude/idev/session-resume/last-session.json. Use when resuming work in a new session, or to save working context at task completion or when the user asks to save. Proactively prompts to save at natural stopping points."
 ---
 
 # Session Resume Skill
@@ -9,10 +9,8 @@ description: "Cross-session context persistence via .claude/idev/session-resume/
 Persist working context across sessions so Claude can resume exactly where it left off without re-discovering files, re-reading code, or re-learning what was being worked on.
 
 ## Activation
-- **Save**: At task completion, or when the user asks to save context
+- **Save**: At task completion, when the user asks to save, or proactively at natural stopping points
 - **Load**: At the start of a new session (before any task work)
-
-(A PreCompact hook could automate saving before context compaction, but none is wired by default — don't rely on it.)
 
 ---
 
@@ -83,13 +81,35 @@ At session start:
 
 ---
 
-## Phase 3: When to Save
+## Phase 3: When to Save (Proactive Prompts)
 
 Save the session state when ANY of these occur:
 1. User explicitly says "save session" or "save context"
 2. A task is completed (update lastTask.status)
 3. User switches to a different feature/task
 4. A blocker is encountered (update openIssues)
+
+### Proactive save prompts
+
+At natural stopping points, prompt the user to save. This fixes the discoverability gap — the save path was never invoked because nothing reminded the user:
+
+```
+After completing a task:
+  → "Task complete. Save session state so we can resume here later? (y/n)"
+  
+Before context compaction (if PreCompact hook is wired):
+  → Auto-save without prompting — context is about to be compressed
+  
+When user says "done for today" or similar:
+  → Auto-save immediately
+  
+When switching to a completely different feature:
+  → "Switching from [Feature A] to [Feature B]. Save state for Feature A? (y/n)"
+```
+
+### Auto-save on session end
+
+If the session is ending (user says goodbye, done, wrap up), save automatically without prompting. The cost is one file write; the benefit is the next session picks up seamlessly.
 
 ---
 
@@ -112,13 +132,18 @@ Session start:
   2. Load .claude/idev/smart-context/index.json (smart context skill)
   3. If activeFeature is set → grep file-index for that feature's files
   4. Ready to work in ~3 reads
+
+Session end:
+  1. Save session state (this skill)
+  2. Update task-journal with what was accomplished
+  3. remember plugin captures session for future reference
 ```
 
 ---
 
 ## Anti-Patterns
-
 1. Do NOT save entire file contents in the session state
 2. Do NOT save more than 10 recent files
 3. Do NOT load the session state AND re-explore the codebase
 4. Do NOT ignore the session state when it exists
+5. Do NOT prompt to save on every minor action — only at natural stopping points

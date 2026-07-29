@@ -1,0 +1,32 @@
+# Branch-Sync SkillOpt Config — Codex exec backend
+# Uses the user's existing Codex CLI subscription (ChatGPT auth mode)
+
+model:
+  reasoning_effort: medium
+
+train:
+  train_size: 5
+  batch_size: 5
+  accumulation: 1
+
+gradient:
+  minibatch_size: 3
+  merge_batch_size: 3
+
+optimizer:
+  learning_rate: 4
+
+evaluation:
+  sel_env_num: 0
+  test_env_num: 5
+
+env:
+  name: branch_sync
+  skill_init: benchmarks/branch-sync/skills/initial.md
+  split_mode: split_dir
+  split_dir: benchmarks/branch-sync/data
+  data_path: ""
+  split_output_dir: ""
+  max_completion_tokens: 4096
+  workers: 1
+  limit: 0

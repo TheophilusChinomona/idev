@@ -96,17 +96,32 @@ Write detected build commands to `.claude/idev/build-check/cache.json`:
 
 ## Phase 3: When to Run
 
+### Pre-flight: DBScripts check
+Before running any build, check for unapplied database migrations:
+```
+1. Scan for DBScripts/ folder in the project
+2. Compare scripts against .claude/idev/db-preflight/applied.json
+3. If unapplied scripts exist:
+   → WARN: "N unapplied DBScripts found — builds may fail with 'Invalid object name' errors"
+   → List the unapplied scripts
+   → Ask user: apply first, or proceed with build anyway?
+4. This prevents the recurring 500 errors from missing schema changes
+```
+The db-preflight skill provides the full scanning and error-mapping logic.
+build-check invokes it as a lightweight pre-flight, not a full replacement.
+
 ### After creating a NEW feature (multi-file):
 ```
 1. Wait until ALL files are created (entity, DTOs, service, controller, etc.)
-2. Run the backend build command
-3. If frontend files were also created, run frontend type-check
-4. Report results: success or list of errors
+2. Run db-preflight pre-flight (check for unapplied DBScripts)
+3. Run the backend build command
+4. If frontend files were also created, run frontend type-check
+5. Report results: success or list of errors
 ```
 
 ### After modifying a SINGLE file:
 ```
-1. Determine which project the file belongs to (use architecture-scanner)
+1. Determine which project the file belongs to (check file path against project roots)
 2. Run ONLY that project's build/type-check
 3. Use quick check command (--no-restore, --noEmit) for speed
 ```
@@ -151,6 +166,33 @@ Report: "Build passed ✓" (brief, one line)
 - Never suppress or ignore build errors
 ```
 
+## Phase 5b: Test Mapping (absorbed from test-map)
+
+After a successful build, optionally run targeted tests for modified files:
+```
+1. Check if .claude/idev/build-check/test-map.json exists
+2. If not, generate it by scanning for test files:
+   - .NET: Glob for *.Tests/**/*.cs, map by naming convention
+   - JS/TS: Glob for *.test.ts, *.spec.ts, map by import analysis
+   - Python: Glob for test_*.py, *_test.py
+3. For each modified source file, look up its test files
+4. Run only the affected tests (not the full suite)
+5. Report: "3/3 tests passed" or "1 test failed: ..."
+```
+
+Test map format (`.claude/idev/build-check/test-map.json`):
+```json
+{
+  "generated": "YYYY-MM-DD",
+  "sourceToTests": {
+    "path/to/Source.cs": ["path/to/SourceTests.cs"]
+  },
+  "testRunCommand": "dotnet test --filter {TestClassName}"
+}
+```
+
+This replaces the standalone test-map skill. The map is generated on first use
+and updated incrementally when new test files are created.
 ---
 
 ## Phase 5: Usage Commands

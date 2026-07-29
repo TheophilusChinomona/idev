@@ -1,6 +1,6 @@
 ---
 name: lessons-learned
-description: "Persistent memory of past mistakes, fixes, and gotchas with prevention steps. Use when starting a new feature (read prevention steps) or after fixing any bug or discovering non-obvious behavior (append a lesson)."
+description: "Persistent memory of past mistakes, fixes, and gotchas with prevention steps. Use when starting a new feature (read prevention steps) or after fixing any bug or discovering non-obvious behavior (append a lesson). For general task tracking, use task-journal instead."
 ---
 
 # Lessons Learned Skill
@@ -8,7 +8,7 @@ description: "Persistent memory of past mistakes, fixes, and gotchas with preven
 ## Purpose
 Persistent memory of mistakes, fixes, and gotchas discovered during development. Prevents repeating the same errors across sessions. Acts as a project-specific "do/don't" reference.
 
-Note: lessons-learned is the manually-curated, project-local log; the auto-learning skill is the separate automatic cross-project instinct system.
+Note: lessons-learned is the manually-curated, project-local log of gotchas and prevention steps. For general task tracking (active tasks, completed work, backlog), use the task-journal skill. The auto-learning skill is the separate automatic cross-project instinct system.
 
 ## Activation
 - **Write**: After fixing a bug, discovering a gotcha, or learning something non-obvious
@@ -146,6 +146,9 @@ Feature creation workflow:
   5. If new error found → Write new lesson
   6. cache-refresh → Update caches
 
+For general task tracking (what's pending, what was done):
+  Use task-journal skill instead.
+
 This closes the learning loop:
   Make mistake → Learn → Prevent → Never repeat
 ```
@@ -153,7 +156,6 @@ This closes the learning loop:
 ---
 
 ## Anti-Patterns
-
 1. Do NOT log every minor issue — only recurring or high-impact ones
 2. Do NOT write vague lessons — include exact symptoms and exact fixes
 3. Do NOT skip reading lessons before feature creation

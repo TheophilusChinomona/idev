@@ -2,7 +2,7 @@
 
 [![validate](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml/badge.svg)](https://github.com/TheophilusChinomona/idev/actions/workflows/validate.yml)
 
-A Claude Code plugin packaging 28 skills, 9 agents, 11 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics.
+A Claude Code plugin packaging 26 skills, 9 agents, 12 commands, and a session-startup hook built around **generic-first design**: skill logic is universal, project knowledge lives in per-project caches that every skill regenerates by scanning the project it lands in. The scanners are strongest on .NET/React-style projects; other stacks fall back to generic heuristics. Includes SkillOpt integration for benchmarking and optimizing skills. Five older skills (architecture-scanner, file-index, import-graph, test-map, post-creation-verify) are deprecated and retained for backwards compatibility only.
 
 ## Install & Setup
 
@@ -44,13 +44,13 @@ Run `/idev:idev-init` once. It creates `.claude/idev/` with the journal, lessons
 
 Just describe tasks normally. The skills slot into four phases of the work:
 
-**Finding things** — instead of reading whole files, Claude consults the caches first: the smart-context index for "which files implement feature X", the file index for fast path lookup, the project map (grepped, never loaded whole) for structure, and the Function Index inside the pattern caches for "where is function Y" without reading the file.
+**Finding things** — instead of reading whole files, Claude consults the caches first: the smart-context index for "which files implement feature X", the project map (grepped, never loaded whole) for structure, and the Function Index inside the pattern caches for "where is function Y" without reading the file.
 
-**Writing code** — `architecture-scanner` works out which layer a file belongs to; `backend-patterns` / `frontend-patterns` scan your codebase once, cache its conventions (file layout, naming, error handling, DI, API client patterns), and make new code follow *your* style rather than generic style. `coding-standards` adds security checks when code touches user input, auth, secrets, or queries.
+**Writing code** — `backend-patterns` / `frontend-patterns` scan your codebase once, cache its conventions (file layout, naming, error handling, DI, API client patterns), and make new code follow *your* style rather than generic style. `coding-standards` adds security checks when code touches user input, auth, secrets, or queries.
 
-**Verifying** — after creating files, `post-creation-verify` checks the wiring (registrations, route tables, DI containers — the stuff that compiles but doesn't run); `build-check` builds once per logical change set; `api-contract-validation` cross-checks frontend calls against backend endpoints (paths, methods, DTO shapes) and can emit contract docs; `feature-completeness` traces a feature end-to-end (UI → service → endpoint → DB) to catch dangling links; `self-review` runs a final invariant check against your project's cached patterns; `test-map` knows which tests cover which files so only the relevant ones run; `browser-test` (+ the browser-tester agent, `/idev:browser-test`) verifies UI flows with real Playwright runs — every verification script is saved to `.claude/idev/browser-tests/scripts/` so the project accumulates an E2E suite as a side effect of normal work.
+**Verifying** — `db-preflight` catches unapplied database migrations before builds; `build-check` builds once per logical change set (including targeted test mapping); `api-contract-validation` discovers and validates API endpoint alignment; `feature-completeness` traces a feature end-to-end (UI → service → endpoint → DB) to catch dangling links; `self-review` runs a final invariant check against your project's cached patterns; `browser-test` (+ the browser-tester agent, `/idev:browser-test`) verifies UI flows with real Playwright runs — every verification script is saved…
 
-**Remembering** — `task-journal` tracks in-flight work across sessions; `session-resume` snapshots state so "pick up where we left off" works; `lessons-learned` logs mistakes-with-fixes so they aren't repeated. The SessionStart hook surfaces all three next time.
+**Remembering** — `task-journal` tracks in-flight work across sessions (integrating with the remember plugin for session persistence); `session-resume` snapshots state so "pick up where we left off" works (proactively prompts to save at natural stopping points); `lessons-learned` logs mistakes-with-fixes so they aren't repeated. The SessionStart hook surfaces all three next time.
 
 Useful things to say:
 
@@ -81,25 +81,27 @@ The instinct subsystem learns reusable habits from your sessions, stored globall
 | `.claude/idev/smart-context/index.json` | stack, features, conventions index |
 | `.claude/idev/backend-patterns/cache.md`, `frontend-patterns/cache.md` | convention caches + Function Index |
 | `.claude/idev/project-map/project.map.md` | annotated file map (grep it, don't load it) |
-| `.claude/idev/file-index/`, `import-graph/`, `test-map/` | lookup indexes |
-| `.claude/idev/journal.md`, `lessons.md`, `session-resume/` | cross-session memory |
-| `.claude/idev/api-contract-validation/`, `api-contracts/` | API alignment cache + generated docs |
+| `.claude/idev/db-preflight/applied.json` | tracks applied DBScripts to prevent schema 500s |
+| `.claude/idev/task-journal/journal.md`, `lessons-learned/lessons.md` | cross-session task log and gotcha reference |
+| `.claude/idev/session-resume/last-session.json` | session snapshot for seamless resumption |
+| `.claude/idev/api-contract-validation/cache.json` | API endpoint discovery cache |
 | `.claude/idev/rules.md`, `project-config.json` | per-project policies the skills read |
 | `~/.claude/homunculus/` | global auto-learning instincts (all projects) |
 
 Delete any cache and the owning skill regenerates it on next use; `.claude/idev/` is safe to gitignore or commit, whichever your team prefers (committing shares warm caches).
 
 ## Components
-
-### Skills (28)
-| Group | Skills |
-|-------|--------|
-| Context | smart-context, project-map, file-index, function-extract, strategic-compact |
-| Patterns | backend-patterns, frontend-patterns, architecture-scanner, coding-standards, commit-style, branch-sync |
-| Verification | build-check, post-creation-verify, api-contract-validation, feature-completeness, self-review, test-map, browser-test |
+### Skills (26 active + 5 deprecated)
+| Group | Active Skills |
+|-------|---------------|
+| Context | smart-context, project-map, function-extract, strategic-compact |
+| Patterns | backend-patterns, frontend-patterns, coding-standards, commit-style, branch-sync |
+| Verification | build-check (includes test mapping), api-contract-validation, feature-completeness, self-review, browser-test, pre-ship-verify, skillopt |
 | Memory | lessons-learned, task-journal, session-resume, auto-learning |
-| Maintenance | cache-refresh, import-graph, auto-approve-policy, idev-init, skill-benchmark |
+| Maintenance | cache-refresh, auto-approve-policy, idev-init, skill-benchmark, env-preflight, db-preflight |
 | Onboarding | codebase-explainer |
+
+**Deprecated** (retained for backwards compatibility): architecture-scanner, file-index, import-graph, test-map, post-creation-verify
 
 ### Agents (7)
 | Agent | Role |
@@ -116,12 +118,14 @@ Delete any cache and the owning skill regenerates it on next use; `.claude/idev/
 
 backend-architect, frontend-developer, code-reviewer, and onboarding-guide are adapted from [agency-agents](https://github.com/msitarzewski/agency-agents) (MIT, © 2025 AgentLand Contributors).
 
-### Commands (11)
+### Commands (12)
 `/idev:hooks` — manage the optional hooks and team git hooks (status/enable/disable/install-git-hooks).
 `/idev:benchmark-skills` — static quality scorecard for every skill in this (or any) plugin; CI enforces all checks via `--strict`.
 `/idev:browser-test` — verify a feature or flow with a real Playwright run; structured report with screenshot/console evidence.
 `/idev:sync-branch` — merge the team base branch into the current feature branch before a PR; conflict resolution + verification + report.
 `/idev:upgrade` — reconcile a project's `.claude/idev/` state with the installed plugin version after updates (missing dirs/config keys, stale CLAUDE.md snippet and git hooks).
+`/idev:update` — update the idev plugin itself to the latest version from GitHub; pulls code, reinstalls, and runs upgrade.
+`/idev:skillopt` — benchmark and optimize any skill using Microsoft SkillOpt; generates scenarios, runs evaluation via Codex, reports results.
 `/idev:review-pr` — fetch and review a PR (Azure DevOps or GitHub) with the code-reviewer agent; optional `--security` pass.
 `/idev:explain-codebase` — turn a repo into an onboarding playlist: analysis docs plus NotebookLM explainer videos (overview + per-subsystem); mandatory doc-review checkpoint; resumable build loop respecting daily limits.
 
@@ -154,7 +158,7 @@ The auto-learning observer and the strategic-compact suggester are pre-registere
 The canonical feature workflow chained from the skills:
 
 ```
-lessons-learned → create files → post-creation-verify → build-check
+db-preflight → lessons-learned → create files → build-check
 → api-contract-validation → feature-completeness → self-review → cache-refresh
 ```
 

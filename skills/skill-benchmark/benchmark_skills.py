@@ -18,6 +18,7 @@ NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 RESERVED = ("anthropic", "claude")
 FIRST_PERSON_RE = re.compile(r"\b(I can|You can|I will|I'll)\b", re.IGNORECASE)
 TRIGGER_RE = re.compile(r"\buse (when|before|after|for)\b", re.IGNORECASE)
+DEPRECATED_RE = re.compile(r"\bDEPRECATED\b", re.IGNORECASE)
 PLUGIN_PATH_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([A-Za-z0-9._/\-]+)")
 
 CHECKS = [
@@ -58,17 +59,17 @@ def check_skill(skill_dir, plugin_root):
     name = fm.get("name", "")
     desc = fm.get("description", "")
     n_lines = len(text.splitlines())
-
+    is_deprecated = bool(DEPRECATED_RE.search(desc))
     results = {
         "desc-present": bool(desc) and len(desc) <= 1024,
-        "desc-triggers": bool(TRIGGER_RE.search(desc)),
+        "desc-triggers": is_deprecated or bool(TRIGGER_RE.search(desc)),
         "desc-3rd-person": not FIRST_PERSON_RE.search(desc),
         "name-kebab": bool(NAME_RE.match(name)),
         "name-length": 0 < len(name) <= 64,
         "name-reserved": not any(w in name.lower() for w in RESERVED),
         "name-matches-dir": name == skill_dir.name,
         "body-length": n_lines <= 500,
-        "has-examples": "```" in body,
+        "has-examples": is_deprecated or ("```" in body),
     }
 
     missing = []

@@ -1,0 +1,99 @@
+[
+  {
+    "id": "val-001",
+    "scenario": "lockfile_conflict",
+    "description": "Merge conflict in package-lock.json. Skill should regenerate, not hand-merge.",
+    "git_state": {
+      "current_branch": "feature/upgrade-deps",
+      "base_branch": "developer",
+      "remote_base_ahead": 4,
+      "local_commits_ahead": 2,
+      "working_tree_clean": true,
+      "conflicts": true,
+      "conflict_files": [
+        {
+          "file": "package-lock.json",
+          "base_change": "Updated lodash to 4.17.22",
+          "feature_change": "Added new dependency axios"
+        }
+      ],
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git merge origin/developer --no-edit"
+    ],
+    "expected_behaviors": [
+      "recognizes lockfile conflict",
+      "regenerates lockfile with npm install instead of hand-merging",
+      "stages regenerated lockfile"
+    ],
+    "anti_patterns": [
+      "manually editing package-lock.json",
+      "git checkout --ours package-lock.json"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "val-002",
+    "scenario": "ambiguous_conflict",
+    "description": "Conflict where both sides changed the same logic and correct combination is unclear.",
+    "git_state": {
+      "current_branch": "feature/refactor-db",
+      "base_branch": "developer",
+      "remote_base_ahead": 3,
+      "local_commits_ahead": 2,
+      "working_tree_clean": true,
+      "conflicts": true,
+      "conflict_files": [
+        {
+          "file": "src/services/DatabaseService.cs",
+          "base_change": "Changed connection pooling from 10 to 20",
+          "feature_change": "Changed connection pooling from 10 to 15 and added retry logic"
+        }
+      ],
+      "ambiguous": true
+    },
+    "expected_commands": [
+      "git merge origin/developer --no-edit"
+    ],
+    "expected_behaviors": [
+      "detects ambiguous conflict",
+      "stops and asks user for resolution",
+      "shows both diffs to user",
+      "does not guess at resolution"
+    ],
+    "anti_patterns": [
+      "silently choosing one side",
+      "making up a resolution without user input"
+    ],
+    "task_type": "branch_sync"
+  },
+  {
+    "id": "val-003",
+    "scenario": "long_lived_branch",
+    "description": "Feature branch is very old (100+ commits behind). Skill should still merge, not rebase.",
+    "git_state": {
+      "current_branch": "feature/legacy-migration",
+      "base_branch": "developer",
+      "remote_base_ahead": 127,
+      "local_commits_ahead": 15,
+      "working_tree_clean": true,
+      "conflicts": false,
+      "task_type": "branch_sync"
+    },
+    "expected_commands": [
+      "git fetch origin",
+      "git merge origin/developer --no-edit"
+    ],
+    "expected_behaviors": [
+      "merges even for long-lived branches",
+      "does not suggest rebase",
+      "handles large merge"
+    ],
+    "anti_patterns": [
+      "git rebase origin/developer",
+      "suggesting to recreate the branch"
+    ],
+    "task_type": "branch_sync"
+  }
+]
